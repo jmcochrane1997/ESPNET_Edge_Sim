@@ -746,7 +746,7 @@ class Speech2TextCTCGreedySearch(Speech2Text):
 
     def _decode_single_sample(self, enc: torch.Tensor):
         # enc: (B, T, D)
-        token_int = self.s2t_model.ctc.argmax(enc)[0]  # batch size is 1; (T,)
+        token_int = self.s2t_model.ctc.argmax(enc.unsqueeze(0))[0]  # batch size is 1; (T,)
         token_int = torch.unique_consecutive(token_int).cpu().tolist()
         token_int = list(filter(lambda x: x != self.s2t_model.blank_id, token_int))
         token = self.converter.ids2tokens(token_int)
