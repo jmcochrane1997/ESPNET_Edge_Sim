@@ -39,7 +39,7 @@ ListOfHypothesis = List[
         List[str],
         List[int],
         Optional[str],
-        Hypothesis,
+        Optional[Hypothesis],
     ]
 ]
 
