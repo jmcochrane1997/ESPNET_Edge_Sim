@@ -714,6 +714,36 @@ class Speech2Text:
 
 
 class Speech2TextCTCGreedySearch(Speech2Text):
+    @staticmethod
+    def from_pretrained(
+        model_tag: Optional[str] = None,
+        **kwargs: Optional[Any],
+    ):
+        """Build Speech2Text instance from the pretrained model.
+
+        Args:
+            model_tag (Optional[str]): Model tag of the pretrained models.
+                Currently, the tags of espnet_model_zoo are supported.
+
+        Returns:
+            Speech2Text: Speech2Text instance.
+
+        """
+        if model_tag is not None:
+            try:
+                from espnet_model_zoo.downloader import ModelDownloader
+
+            except ImportError:
+                logging.error(
+                    "`espnet_model_zoo` is not installed. "
+                    "Please install via `pip install -U espnet_model_zoo`."
+                )
+                raise
+            d = ModelDownloader()
+            kwargs.update(**d.download_and_unpack(model_tag))
+
+        return Speech2TextCTCGreedySearch(**kwargs)
+
     def _decode_single_sample(self, enc: torch.Tensor):
         # enc: (B, T, D)
         token_int = self.s2t_model.ctc.argmax(enc)[0]  # batch size is 1; (T,)
