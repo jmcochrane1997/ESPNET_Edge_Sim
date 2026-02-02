@@ -713,6 +713,27 @@ class Speech2Text:
         return Speech2Text(**kwargs)
 
 
+class Speech2TextCTCGreedySearch(Speech2Text):
+    def _decode_single_sample(self, enc: torch.Tensor):
+        # enc: (B, T, D)
+        token_int = self.s2t_model.ctc.argmax(enc)[0]  # batch size is 1; (T,)
+        token_int = torch.unique_consecutive(token_int).cpu().tolist()
+        token_int = list(filter(lambda x: x != self.s2t_model.blank_id, token_int))
+        token = self.converter.ids2tokens(token_int)
+        token_nospecial = [x for x in token if not (x[0] == "<" and x[-1] == ">")]
+
+        if self.tokenizer is not None:
+            text = self.tokenizer.tokens2text(token)
+            text_nospecial = self.tokenizer.tokens2text(token_nospecial)
+        else:
+            text, text_nospecial = None, None
+
+        logging.info(f"best hypo: {text}")
+
+        results = [(text, token, token_int, text_nospecial, None)]
+        return results
+
+
 @typechecked
 def inference(
     output_dir: str,
