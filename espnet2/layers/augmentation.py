@@ -6,7 +6,7 @@ import librosa
 import numpy as np
 import torch
 import torchaudio
-from omegaconf import ListConfig
+from omegaconf import OmegaConf, ListConfig
 
 # Avaiable sampling rates for bandwidth limitation
 SAMPLE_RATES = (8000, 16000, 22050, 24000, 32000, 44100, 48000)
@@ -78,8 +78,10 @@ class DataAugmentation:
         ],
         apply_n: Tuple[int, int] = [1, 1],
     ):
+        if isinstance(effects, ListConfig):
+            effects = OmegaConf.to_container(effects, resolve=True)
         self.effects = tuple(
-            [list(tup[1]) if isinstance(tup[1], (list, ListConfig)) else tup[1:] for tup in effects]
+            [tup[1] if isinstance(tup[1], list) else tup[1:] for tup in effects]
         )
         self.effect_probs = tuple([tup[0] for tup in effects])
         assert apply_n[0] <= apply_n[1], apply_n
