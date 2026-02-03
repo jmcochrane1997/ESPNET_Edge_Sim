@@ -79,7 +79,7 @@ class DataAugmentation:
         apply_n: Tuple[int, int] = [1, 1],
     ):
         self.effects = tuple(
-            [tup[1] if isinstance(tup[1], (list, ListConfig)) else tup[1:] for tup in effects]
+            [list(tup[1]) if isinstance(tup[1], (list, ListConfig)) else tup[1:] for tup in effects]
         )
         self.effect_probs = tuple([tup[0] for tup in effects])
         assert apply_n[0] <= apply_n[1], apply_n
