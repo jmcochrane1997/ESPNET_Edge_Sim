@@ -473,6 +473,8 @@ class EBranchformerEncoder(AbsEncoder):
             torch.Tensor: Output length (#batch).
             torch.Tensor: Not to be used now.
         """
+        
+        print("BEGIN ENCODER LAYER!")
 
         if masks is None:
             masks = (~make_pad_mask(ilens)[:, None, :]).to(xs_pad.device)
