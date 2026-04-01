@@ -39,9 +39,9 @@ class DecoderLayer(nn.Module):
     def __init__(
         self,
         size,
-        self_attn,
-        src_attn,
-        feed_forward,
+        self_attn,    # MultiHeadedAttention
+        src_attn,     # MultiHeadedAttention
+        feed_forward, # PositionwiseFeedForward
         dropout_rate,
         normalize_before=True,
         concat_after=False,
@@ -50,9 +50,9 @@ class DecoderLayer(nn.Module):
         """Construct an DecoderLayer object."""
         super(DecoderLayer, self).__init__()
         self.size = size
-        self.self_attn = self_attn
-        self.src_attn = src_attn
-        self.feed_forward = feed_forward
+        self.self_attn = self_attn            # MultiHeadedAttention
+        self.src_attn = src_attn              # MultiHeadedAttention
+        self.feed_forward = feed_forward      # PositionwiseFeedForward
         self.sequential_attn = sequential_attn
         self.norm1 = LayerNorm(size)
         self.norm2 = LayerNorm(size)
@@ -121,15 +121,24 @@ class DecoderLayer(nn.Module):
 
         if self.concat_after:
             tgt_concat = torch.cat(
-                (tgt_q, self.self_attn(tgt_q, tgt, tgt, tgt_q_mask)), dim=-1
+                (tgt_q, self.self_attn(tgt_q, tgt, tgt, tgt_q_mask)), dim=-1  # MultiHeadedAttention
             )
-            x = residual + self.concat_linear1(tgt_concat)
+            x = residual + self.concat_linear1(tgt_concat)   #         --> LOCAL LINEAR LAYER!
+            
+            # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+            d = {"x_dim": tgt_concat.dim(), "w_dim": self.concat_linear1.weight.ndimension()}
+            print(d)
+            # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         else:
-            x = residual + self.dropout(self.self_attn(tgt_q, tgt, tgt, tgt_q_mask))
+            x = residual + self.dropout(self.self_attn(tgt_q, tgt, tgt, tgt_q_mask))  # MultiHeadedAttention
         if not self.normalize_before:
             x = self.norm1(x)
 
         if self.sequential_attn is not None:
+            
+            
+            raise Exception(f"sequential_attn should be None in the decoder implementation, but found: {self.sequential_attn}")
+        
             residual = x
             if self.normalize_before:
                 x = self.norm4(x)
@@ -143,7 +152,7 @@ class DecoderLayer(nn.Module):
                     ),
                     dim=-1,
                 )
-                x = residual + self.concat_linear3(x_concat)
+                x = residual + self.concat_linear3(x_concat) 
             else:
                 x = residual + self.dropout(
                     self.sequential_attn(x, pre_memory, pre_memory, pre_memory_mask)
@@ -158,7 +167,12 @@ class DecoderLayer(nn.Module):
             x_concat = torch.cat(
                 (x, self.src_attn(x, memory, memory, memory_mask)), dim=-1
             )
-            x = residual + self.concat_linear2(x_concat)
+            x = residual + self.concat_linear2(x_concat) #         --> LOCAL LINEAR LAYER!
+            
+            # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+            d = {"x_dim": x_concat.dim(), "w_dim": self.concat_linear2.weight.ndimension()}
+            print(d)
+            # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         else:
             x = residual + self.dropout(self.src_attn(x, memory, memory, memory_mask))
         if not self.normalize_before:
@@ -167,7 +181,7 @@ class DecoderLayer(nn.Module):
         residual = x
         if self.normalize_before:
             x = self.norm3(x)
-        x = residual + self.dropout(self.feed_forward(x))
+        x = residual + self.dropout(self.feed_forward(x))  # PositionwiseFeedForward
         if not self.normalize_before:
             x = self.norm3(x)
 

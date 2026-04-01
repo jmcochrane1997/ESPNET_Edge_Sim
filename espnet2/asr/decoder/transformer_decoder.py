@@ -79,12 +79,19 @@ class BaseTransformerDecoder(
         super().__init__()
         attention_dim = encoder_output_size
 
+        # **************************************************************
+        # |
+        # V
         if input_layer == "embed":
             self.embed = torch.nn.Sequential(
                 torch.nn.Embedding(vocab_size, attention_dim),
                 pos_enc_class(attention_dim, positional_dropout_rate),
             )
+        #  Λ
+        #  |
+        # **************************************************************
         elif input_layer == "linear":
+            raise Exception("input_layer == 'linear' is not currently supported for the TransformerDecoder. Please use input_layer == 'embed' instead.")
             self.embed = torch.nn.Sequential(
                 torch.nn.Linear(vocab_size, attention_dim),
                 torch.nn.LayerNorm(attention_dim),
@@ -168,9 +175,11 @@ class BaseTransformerDecoder(
                     decoder_layer, x, tgt_mask, memory, memory_mask, use_reentrant=False
                 )
             else:
+                # //////////////////MAIN INFERENCE//////////////////////////////////////
                 x, tgt_mask, memory, memory_mask = decoder_layer(
                     x, tgt_mask, memory, memory_mask
                 )
+                # ///////////////////////////////////////////////////////////////////////
             if return_all_hs:
                 intermediate_outs.append(x)
         if self.normalize_before:
@@ -178,7 +187,14 @@ class BaseTransformerDecoder(
         if return_hs:
             hidden = x
         if self.output_layer is not None:
-            x = self.output_layer(x)
+            
+            # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+            d = {"x_dim": x.dim(), "w_dim": self.output_layer.weight.ndimension()}
+            print(d)
+            # |
+            # V
+            # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+            x = self.output_layer(x)  # --> LOCAL LINEAR LAYER!
 
         olens = tgt_mask.sum(1)
         if return_hs:
@@ -436,6 +452,8 @@ class TransformerDecoder(BaseTransformerDecoder):
                 use_flash_attn = False
 
         attention_dim = encoder_output_size
+        
+        # //////////////////////////// MAIN INFERENCE COMPONENT OF THE DECODER LAYER ////////////////////////////
         self.decoders = repeat(
             num_blocks,
             lambda lnum: DecoderLayer(
@@ -445,7 +463,7 @@ class TransformerDecoder(BaseTransformerDecoder):
                     attention_dim,
                     self_attention_dropout_rate,
                     qk_norm,
-                    use_flash_attn,
+                    use_flash_attn,   #  use_flash_attn: bool = True,
                     True,
                     False,
                 ),
@@ -465,6 +483,7 @@ class TransformerDecoder(BaseTransformerDecoder):
             ),
             layer_drop_rate,
         )
+        # ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 class LightweightConvolutionTransformerDecoder(BaseTransformerDecoder):

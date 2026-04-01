@@ -29,4 +29,20 @@ class PositionwiseFeedForward(torch.nn.Module):
 
     def forward(self, x):
         """Forward function."""
-        return self.w_2(self.dropout(self.activation(self.w_1(x))))
+        w1 = self.w_1(x)  #         --> LOCAL LINEAR LAYER!
+        # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        d = {"x_dim": x.dim(), "w_dim": self.w_1.weight.ndimension()}
+        print(d)
+        # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        
+        
+        a1 = self.activation(w1)
+        d1 = self.dropout(a1)
+        w2 = self.w_2(d1) #         --> LOCAL LINEAR LAYER!
+        # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        d = {"x_dim": d1.dim(), "w_dim": self.w_2.weight.ndimension()}
+        print(d)
+        # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        
+        
+        return w2   

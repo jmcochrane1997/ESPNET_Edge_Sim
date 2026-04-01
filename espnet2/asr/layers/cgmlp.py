@@ -70,7 +70,12 @@ class ConvolutionalSpatialGatingUnit(torch.nn.Module):
         x_g = self.norm(x_g)  # (N, T, D/2)
         x_g = self.conv(x_g.transpose(1, 2)).transpose(1, 2)  # (N, T, D/2)
         if self.linear is not None:
-            x_g = self.linear(x_g)
+            x_g = self.linear(x_g) #         --> LOCAL LINEAR LAYER!
+            
+            # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+            d = {"x_dim": x_g.dim(), "w_dim": self.linear.weight.ndimension()}
+            print(d)
+            # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         if gate_add is not None:
             x_g = x_g + gate_add
@@ -113,9 +118,20 @@ class ConvolutionalGatingMLP(torch.nn.Module):
         else:
             xs_pad, pos_emb = x, None
 
-        xs_pad = self.channel_proj1(xs_pad)  # size -> linear_units
-        xs_pad = self.csgu(xs_pad)  # linear_units -> linear_units/2
-        xs_pad = self.channel_proj2(xs_pad)  # linear_units/2 -> size
+        xs_pad = self.channel_proj1(xs_pad)  # size -> linear_units         --> LOCAL LINEAR LAYER!
+        # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        d = {"x_dim": xs_pad.dim(), "w_dim": self.channel_proj1[0].weight.ndimension()}
+        print(d)
+        # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        
+        xs_pad = self.csgu(xs_pad)  # ConvolutionalSpatialGatingUnit # linear_units -> linear_units/2    
+        
+             
+        xs_pad = self.channel_proj2(xs_pad)  # linear_units/2 -> size       --> LOCAL LINEAR LAYER!
+        # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        d = {"x_dim": xs_pad.dim(), "w_dim": self.channel_proj2.weight.ndimension()}
+        print(d)
+        # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         if pos_emb is not None:
             out = (xs_pad, pos_emb)

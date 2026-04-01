@@ -52,6 +52,7 @@ from espnet2.legacy.nets.pytorch_backend.transformer.subsampling import (
 )
 
 
+
 class EBranchformerEncoderLayer(torch.nn.Module):
     """E-Branchformer encoder layer module.
 
@@ -78,11 +79,11 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         super().__init__()
 
         self.size = size
-        self.attn = attn
-        self.cgmlp = cgmlp
+        self.attn = attn   #   MultiHeadedAttention
+        self.cgmlp = cgmlp #   ConvolutionalGatingMLP
 
-        self.feed_forward = feed_forward
-        self.feed_forward_macaron = feed_forward_macaron
+        self.feed_forward = feed_forward  #  PositionwiseFeedForward
+        self.feed_forward_macaron = feed_forward_macaron #  PositionwiseFeedForward
         self.ff_scale = 1.0
         if self.feed_forward is not None:
             self.norm_ff = LayerNorm(size)
@@ -131,8 +132,8 @@ class EBranchformerEncoderLayer(torch.nn.Module):
 
         if self.feed_forward_macaron is not None:
             residual = x
-            x = self.norm_ff_macaron(x)
-            x = residual + self.ff_scale * self.dropout(self.feed_forward_macaron(x))
+            x = self.norm_ff_macaron(x) 
+            x = residual + self.ff_scale * self.dropout(self.feed_forward_macaron(x))  #  PositionwiseFeedForward
 
         # Two branches
         x1 = x
@@ -144,8 +145,12 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         if isinstance(self.attn, FastSelfAttention):
             x_att = self.attn(x1, mask)
         else:
+            # |
+            # V
             if pos_emb is not None:
-                x_att = self.attn(x1, x1, x1, pos_emb, mask)
+                x_att = self.attn(x1, x1, x1, pos_emb, mask)  #   MultiHeadedAttention
+            # Λ
+            # |
             else:
                 x_att = self.attn(x1, x1, x1, mask)
 
@@ -156,7 +161,7 @@ class EBranchformerEncoderLayer(torch.nn.Module):
 
         if pos_emb is not None:
             x2 = (x2, pos_emb)
-        x2 = self.cgmlp(x2, mask)
+        x2 = self.cgmlp(x2, mask)   #   ConvolutionalGatingMLP
         if isinstance(x2, tuple):
             x2 = x2[0]
 
@@ -167,13 +172,18 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         x_tmp = x_concat.transpose(1, 2)
         x_tmp = self.depthwise_conv_fusion(x_tmp)
         x_tmp = x_tmp.transpose(1, 2)
-        x = x + self.dropout(self.merge_proj(x_concat + x_tmp))
+        x = x + self.dropout(self.merge_proj(x_concat + x_tmp))  # --> LOCAL LINEAR LAYER! 
+        
+        # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        d = {"x_dim": (x_concat + x_tmp).dim(), "w_dim": self.merge_proj.weight.ndimension()}
+        print(d)
+        # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         if self.feed_forward is not None:
             # feed forward module
             residual = x
             x = self.norm_ff(x)
-            x = residual + self.ff_scale * self.dropout(self.feed_forward(x))
+            x = residual + self.ff_scale * self.dropout(self.feed_forward(x)) #  PositionwiseFeedForward
 
         x = self.norm_final(x)
 
@@ -228,14 +238,26 @@ class EBranchformerEncoder(AbsEncoder):
                 pos_enc_layer_type = "legacy_rel_pos"
             if attention_layer_type == "rel_selfattn":
                 attention_layer_type = "legacy_rel_selfattn"
+        # **************************************************************   
+        #  |
+        #  V  
         elif rel_pos_type == "latest":
             assert attention_layer_type != "legacy_rel_selfattn"
             assert pos_enc_layer_type != "legacy_rel_pos"
+        #  Λ
+        #  |
+        # **************************************************************
         else:
             raise ValueError("unknown rel_pos_type: " + rel_pos_type)
-
+        
+        # **************************************************************
+        #  |
+        #  V
         if pos_enc_layer_type == "abs_pos":
             pos_enc_class = PositionalEncoding
+        #  Λ
+        #  |
+        # **************************************************************
         elif pos_enc_layer_type == "conv":
             pos_enc_class = ConvolutionalPositionalEmbedding
         elif pos_enc_layer_type == "scaled_abs_pos":
@@ -252,9 +274,10 @@ class EBranchformerEncoder(AbsEncoder):
         else:
             raise ValueError("unknown pos_enc_layer: " + pos_enc_layer_type)
 
+
         if input_layer == "linear":
             self.embed = torch.nn.Sequential(
-                torch.nn.Linear(input_size, output_size),
+                torch.nn.Linear(input_size, output_size),  # WE DON'T NEED TO SIMULATE THIS LAYER SINCE THIS BRANCH DOES NOT RUN DURING INFERENCE
                 torch.nn.LayerNorm(output_size),
                 torch.nn.Dropout(dropout_rate),
                 pos_enc_class(output_size, positional_dropout_rate, max_pos_emb_len),
@@ -280,6 +303,9 @@ class EBranchformerEncoder(AbsEncoder):
                 dropout_rate,
                 pos_enc_class(output_size, positional_dropout_rate, max_pos_emb_len),
             )
+        # **************************************************************
+        # |
+        # V
         elif input_layer == "conv2d":
             self.embed = Conv2dSubsampling(
                 input_size,
@@ -287,6 +313,9 @@ class EBranchformerEncoder(AbsEncoder):
                 dropout_rate,
                 pos_enc_class(output_size, positional_dropout_rate, max_pos_emb_len),
             )
+        #  Λ
+        #  |
+        # **************************************************************
         elif input_layer == "conv2d1":
             self.embed = Conv2dSubsampling1(
                 input_size,
@@ -331,11 +360,15 @@ class EBranchformerEncoder(AbsEncoder):
                     pos_enc_class(output_size, positional_dropout_rate, max_pos_emb_len)
                 )
             else:
-                self.embed = torch.nn.Linear(input_size, output_size)
+                self.embed = torch.nn.Linear(input_size, output_size) # WE DON'T NEED TO SIMULATE THIS LAYER SINCE THIS BRANCH DOES NOT RUN DURING INFERENCE
         else:
             raise ValueError("unknown input_layer: " + input_layer)
 
         activation = get_activation(ffn_activation_type)
+        
+        # **************************************************************
+        # |
+        # V
         if positionwise_layer_type == "linear":
             positionwise_layer = PositionwiseFeedForward
             positionwise_layer_args = (
@@ -344,13 +377,20 @@ class EBranchformerEncoder(AbsEncoder):
                 dropout_rate,
                 activation,
             )
+        # Λ
+        # |
+        # **************************************************************
         elif positionwise_layer_type is None:
             logging.warning("no macaron ffn")
         else:
             raise ValueError("Support only linear.")
 
+        # **************************************************************
+        # |
+        # V
         if attention_layer_type == "selfattn":
             # Default to flash attention unless overrided by user
+            
             if use_flash_attn:
                 try:
                     from espnet2.torch_utils.get_flash_attn_compatability import (
@@ -372,6 +412,9 @@ class EBranchformerEncoder(AbsEncoder):
                 False,
                 False,
             )
+        #  Λ
+        #  |
+        # **************************************************************
         elif attention_layer_type == "legacy_rel_selfattn":
             assert pos_enc_layer_type == "legacy_rel_pos"
             encoder_selfattn_layer = LegacyRelPositionMultiHeadedAttention
@@ -412,7 +455,7 @@ class EBranchformerEncoder(AbsEncoder):
             use_linear_after_conv,
             gate_activation,
         )
-
+        # //////////////////////////// MAIN INFERENCE COMPONENT OF THE ENCODER LAYER ////////////////////////////
         self.encoders = repeat(
             num_blocks,
             lambda lnum: EBranchformerEncoderLayer(
@@ -430,6 +473,7 @@ class EBranchformerEncoder(AbsEncoder):
             ),
             layer_drop_rate,
         )
+        # ///////////////////////////////////////////////////////////////////////////////////////////////////////
         self.after_norm = LayerNorm(output_size)
 
         self.layer_drop_rate = layer_drop_rate
@@ -513,6 +557,7 @@ class EBranchformerEncoder(AbsEncoder):
             else:
                 xs_pad = self.embed(xs_pad)
 
+        # =============================================================
         intermediate_outs = []
         for layer_idx, encoder_layer in enumerate(self.encoders):
             if max_layer is not None and layer_idx >= max_layer:
@@ -529,8 +574,9 @@ class EBranchformerEncoder(AbsEncoder):
                     encoder_layer, xs_pad, masks, use_reentrant=False
                 )
             else:
+                # //////////////////MAIN INFERENCE//////////////////////////////////////
                 xs_pad, masks = encoder_layer(xs_pad, masks)
-
+                # /////////////////////////////////////////////////////////////////////
             if return_all_hs:
                 if isinstance(xs_pad, tuple):
                     intermediate_outs.append(xs_pad[0])
@@ -550,15 +596,14 @@ class EBranchformerEncoder(AbsEncoder):
 
                     if isinstance(xs_pad, tuple):
                         xs_pad = list(xs_pad)
-                        xs_pad[0] = xs_pad[0] + self.conditioning_layer(ctc_out)
+                        xs_pad[0] = xs_pad[0] + self.conditioning_layer(ctc_out) # self.conditioning_layer = None  (from last line of __init__)
                         xs_pad = tuple(xs_pad)
                     else:
-                        xs_pad = xs_pad + self.conditioning_layer(ctc_out)
-
+                        xs_pad = xs_pad + self.conditioning_layer(ctc_out)  # self.conditioning_layer = None  (from last line of __init__)
+        # =============================================================    
         if isinstance(xs_pad, tuple):
             xs_pad = xs_pad[0]
-
-        xs_pad = self.after_norm(xs_pad)
+        xs_pad = self.after_norm(xs_pad)  # THIS IS JUST A LAYER NORM
         olens = masks.squeeze(1).sum(1)
         if len(intermediate_outs) > 0:
             return (xs_pad, intermediate_outs), olens, None
