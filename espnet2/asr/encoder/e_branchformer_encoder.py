@@ -54,7 +54,7 @@ from espnet2.legacy.nets.pytorch_backend.transformer.subsampling import (
 from espnet2.edgeSim.LinearLayerSim import LinearSim
 import numpy as np
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
-print(f"ENCODER SOURCE CODE DEVICE: {DEVICE}")
+#print(f"ENCODER SOURCE CODE DEVICE: {DEVICE}")
 
 class EBranchformerEncoderLayer(torch.nn.Module):
     """E-Branchformer encoder layer module.
@@ -179,19 +179,20 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         x = x + self.dropout(x_lin)   
         
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        print("SIMULATING MERGE PROJ LAYER IN EBranchformerEncoderLayer...")
+ #       print("SIMULATING MERGE PROJ LAYER IN EBranchformerEncoderLayer...")
         with torch.no_grad():
             weight = self.merge_proj.weight.data.to(DEVICE)
             bias = self.merge_proj.bias.data.to(DEVICE)
             linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
             x_sim_input = (x_concat + x_tmp).to(DEVICE)
             x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
-        print("sim output:"+ str(x_sim))
-        print("gt output:"+ str(x_lin))
+ #       print("sim output:"+ str(x_sim))
+ #       print("gt output:"+ str(x_lin))
         max_diff = torch.max(torch.abs(x_lin - x_sim)).item()
-        print(f"MAX DIFF: {max_diff}")
+#        print(f"MAX DIFF: {max_diff}")
         assert torch.allclose(x_lin.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
-        print("MERGE PROJ LAYER SIMULATION SUCCESSFUL!")
+#        print("MERGE PROJ LAYER SIMULATION SUCCESSFUL!")
+        x_lin = x_sim # use the sim output as the new x_lin to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         if self.feed_forward is not None:

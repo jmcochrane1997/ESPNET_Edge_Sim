@@ -75,7 +75,7 @@ class ConvolutionalSpatialGatingUnit(torch.nn.Module):
         if self.linear is not None:
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            print("SIMULATING LINEAR LAYER IN CSGU...")
+#            print("SIMULATING LINEAR LAYER IN CSGU...")
             with torch.no_grad():
                 weight = self.linear.weight.data.to(DEVICE)
                 bias = self.linear.bias.data.to(DEVICE)
@@ -90,8 +90,9 @@ class ConvolutionalSpatialGatingUnit(torch.nn.Module):
             # Ʌ
             # |
             max_diff = torch.max(torch.abs(x_g - x_sim)).item()
-            print(f"MAX DIFF: {max_diff}")
+#            print(f"MAX DIFF: {max_diff}")
             assert torch.allclose(x_g.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in CSGU!"
+            x_g = x_sim # use the sim output as the new x_g to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
             
    
@@ -138,7 +139,7 @@ class ConvolutionalGatingMLP(torch.nn.Module):
             xs_pad, pos_emb = x, None
 
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        print("SIMULATING FIRST LINEAR LAYER IN CGMLP...")
+#        print("SIMULATING FIRST LINEAR LAYER IN CGMLP...")
         with torch.no_grad():
             weight = self.channel_proj1[0].weight.data.to(DEVICE)
             bias = self.channel_proj1[0].bias.data.to(DEVICE)
@@ -152,15 +153,16 @@ class ConvolutionalGatingMLP(torch.nn.Module):
         # Ʌ
         # |
         max_diff = torch.max(torch.abs(xs_pad - x_sim)).item()
-        print(f"MAX DIFF: {max_diff}")
+#        print(f"MAX DIFF: {max_diff}")
         assert torch.allclose(xs_pad.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in CGMLP!"
+        xs_pad = x_sim # use the sim output as the new xs_pad to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
         xs_pad = self.csgu(xs_pad)  # ConvolutionalSpatialGatingUnit # linear_units -> linear_units/2    
         
         
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        print("SIMULATING SECOND LINEAR LAYER IN CGMLP...")
+#        print("SIMULATING SECOND LINEAR LAYER IN CGMLP...")
         with torch.no_grad():
             weight = self.channel_proj2.weight.data.to(DEVICE)
             bias = self.channel_proj2.bias.data.to(DEVICE)
@@ -175,8 +177,9 @@ class ConvolutionalGatingMLP(torch.nn.Module):
         # Ʌ
         # |
         max_diff = torch.max(torch.abs(xs_pad - x_sim)).item()
-        print(f"MAX DIFF: {max_diff}")
+#        print(f"MAX DIFF: {max_diff}")
         assert torch.allclose(xs_pad.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in CGMLP!"
+        xs_pad = x_sim # use the sim output as the new xs_pad to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         if pos_emb is not None:

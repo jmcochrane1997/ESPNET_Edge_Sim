@@ -35,7 +35,7 @@ class PositionwiseFeedForward(torch.nn.Module):
         """Forward function."""
         w1 = self.w_1(x).to(DEVICE)  #         --> LOCAL LINEAR LAYER!
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        print("SIMULATING FIRST LINEAR LAYER IN POSITIONWISE FEED FORWARD...")
+#        print("SIMULATING FIRST LINEAR LAYER IN POSITIONWISE FEED FORWARD...")
         with torch.no_grad():
             weight = self.w_1.weight.data.to(DEVICE)
             bias = self.w_1.bias.data.to(DEVICE)
@@ -45,8 +45,9 @@ class PositionwiseFeedForward(torch.nn.Module):
         #print("sim output:"+ str(x_sim))
         #print("gt output:"+ str(w1))
         max_diff = torch.max(torch.abs(w1 - x_sim)).item()
-        print(f"MAX DIFF: {max_diff}")
+#        print(f"MAX DIFF: {max_diff}")
         assert torch.allclose(w1.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in PositionwiseFeedForward!"
+        w1 = x_sim # use the sim output as the new w1 to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
         
@@ -54,7 +55,7 @@ class PositionwiseFeedForward(torch.nn.Module):
         d1 = self.dropout(a1)
         w2 = self.w_2(d1).to(DEVICE) #         --> LOCAL LINEAR LAYER!
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        print("SIMULATING SECOND LINEAR LAYER IN POSITIONWISE FEED FORWARD...")
+#        print("SIMULATING SECOND LINEAR LAYER IN POSITIONWISE FEED FORWARD...")
         with torch.no_grad():
             weight = self.w_2.weight.data.to(DEVICE)
             bias = self.w_2.bias.data.to(DEVICE)
@@ -64,9 +65,9 @@ class PositionwiseFeedForward(torch.nn.Module):
         #print("sim output:"+ str(x_sim))
         #print("gt output:"+ str(w2))
         max_diff = torch.max(torch.abs(w2 - x_sim)).item()
-        print(f"MAX DIFF: {max_diff}")
+#        print(f"MAX DIFF: {max_diff}")
         assert torch.allclose(w2.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in PositionwiseFeedForward!"
+        w2 = x_sim # use the sim output as the new w2 to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
-    
         return w2   

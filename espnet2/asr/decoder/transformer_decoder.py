@@ -194,7 +194,7 @@ class BaseTransformerDecoder(
         if self.output_layer is not None:
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            print("SIMULATING OUTPUT LAYER IN TRANSFORMER DECODER...")
+#            print("SIMULATING OUTPUT LAYER IN TRANSFORMER DECODER...")
             with torch.no_grad():
                 weight = self.output_layer.weight.data.to(DEVICE)
                 bias = self.output_layer.bias.data.to(DEVICE)
@@ -209,8 +209,9 @@ class BaseTransformerDecoder(
             # Ʌ
             # |
             max_diff = torch.max(torch.abs(x - x_sim)).item() # compute the max absolute difference between the original output layer output and the simulated output layer output
-            print(f"MAX DIFF: {max_diff}")
+#            print(f"MAX DIFF: {max_diff}")
             assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder output layer!"
+            x = x_sim # use the sim output as the new x to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         olens = tgt_mask.sum(1)

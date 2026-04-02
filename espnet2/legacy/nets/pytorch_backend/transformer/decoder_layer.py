@@ -105,6 +105,8 @@ class DecoderLayer(nn.Module):
             torch.Tensor: Encoded memory mask (#batch, maxlen_in).
 
         """
+        
+        print("BEGIN DECODER LAYER...")
         residual = tgt
         if self.normalize_before:
             tgt = self.norm1(tgt)
@@ -132,7 +134,7 @@ class DecoderLayer(nn.Module):
             x = residual + self.concat_linear1(tgt_concat)   #         --> LOCAL LINEAR LAYER!
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            print("SIMULATING FIRST LINEAR LAYER IN TRANSFORMER DECODER...")
+#            print("SIMULATING FIRST LINEAR LAYER IN TRANSFORMER DECODER...")
             with torch.no_grad():
                 weight = self.concat_linear1.weight.data.to(DEVICE)
                 bias = self.concat_linear1.bias.data.to(DEVICE)
@@ -142,8 +144,9 @@ class DecoderLayer(nn.Module):
             #print("sim output:"+ str(x_sim))
             #print("gt output:"+ str(x))
             max_diff = torch.max(torch.abs(x - x_sim)).item()
-            print(f"MAX DIFF: {max_diff}")
+#            print(f"MAX DIFF: {max_diff}")
             assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder first linear layer!"
+            x = x_sim # use the sim output as the new x to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         else:
             x = residual + self.dropout(self.self_attn(tgt_q, tgt, tgt, tgt_q_mask))  # MultiHeadedAttention
@@ -186,7 +189,7 @@ class DecoderLayer(nn.Module):
             x = residual + self.concat_linear2(x_concat) #         --> LOCAL LINEAR LAYER!
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            print("SIMULATING SECOND LINEAR LAYER IN TRANSFORMER DECODER...")
+#            print("SIMULATING SECOND LINEAR LAYER IN TRANSFORMER DECODER...")
             with torch.no_grad():
                 weight = self.concat_linear2.weight.data.to(DEVICE)
                 bias = self.concat_linear2.bias.data.to(DEVICE)
@@ -196,8 +199,9 @@ class DecoderLayer(nn.Module):
             #print("sim output:"+ str(x_sim))
             #print("gt output:"+ str(x))
             max_diff = torch.max(torch.abs(x - x_sim)).item()
-            print(f"MAX DIFF: {max_diff}")
+#            print(f"MAX DIFF: {max_diff}")
             assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder second linear layer!"
+            x = x_sim # use the sim output as the new x to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         else:
             x = residual + self.dropout(self.src_attn(x, memory, memory, memory_mask))
