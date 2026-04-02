@@ -50,7 +50,7 @@ class PositionwiseFeedForward(torch.nn.Module):
         max_diff = torch.max(torch.abs(w1 - x_sim)).item()
 #        print(f"MAX DIFF: {max_diff}")
         if SIMULATE == "False":
-            assert torch.allclose(w1.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in PositionwiseFeedForward!"
+            assert torch.allclose(w1.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in PositionwiseFeedForward: {max_diff}"
         w1 = x_sim # use the sim output as the new w1 to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
@@ -71,7 +71,7 @@ class PositionwiseFeedForward(torch.nn.Module):
         max_diff = torch.max(torch.abs(w2 - x_sim)).item()
 #        print(f"MAX DIFF: {max_diff}")
         if SIMULATE == "False":
-            assert torch.allclose(w2.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in PositionwiseFeedForward!"
+            assert torch.allclose(w2.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in PositionwiseFeedForward: {max_diff}"
         w2 = x_sim # use the sim output as the new w2 to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
