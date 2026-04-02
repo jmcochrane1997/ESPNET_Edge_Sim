@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import math
+from tqdm import tqdm
 torch.manual_seed(42)
 
 class LinearSim(nn.Module):
@@ -13,7 +14,7 @@ class LinearSim(nn.Module):
         if self.Bias is None:
           self.Bias = 0 #torch.zeros(self.Weight.shape[0])
         self.show_batch_processing = show_batch_processing
-        
+
 
     def quick_split_W3D(self, matrix):
       '''
@@ -42,16 +43,16 @@ class LinearSim(nn.Module):
       samples = normal_dist.sample((num_channels, num_rows, num_cols))
       return samples
       #assert self.Error_Dist.dim == 3, "error: expected a three-dimensional error distribution"
-      
+
 
     def Matmul_2D(self, X, W, diff_dist):
       '''
-      Re-factors 2d Matrix multiplication using a sum over Hadamard Products. 
+      Re-factors 2d Matrix multiplication using a sum over Hadamard Products.
       X: Tensor of shape (batch_size, in_features) = (m,n)
       W: Tensor of shape (out_features, in_features) = (k,n)
-      diff_dist: Tensor of shape (batch_size, in_features, out_features)  
+      diff_dist: Tensor of shape (batch_size, in_features, out_features)
       '''
-      
+
       assert X.dim()==2 and W.dim()==2
       m, n = X.shape   # m = in_features
       k, n = W.shape   # k = out_features
@@ -60,7 +61,7 @@ class LinearSim(nn.Module):
 
       # transpose the weight matrix from (k,n) --> (n,k)
       W = W.T # shape = (n, k)
- 
+
       # compute the channel-wise Hadamard Products
       Hs = [] #
       for row_index in range(m):
@@ -70,7 +71,7 @@ class LinearSim(nn.Module):
 
       X_times_W = torch.stack(Hs, dim=0) # stack the Hadamard Products along the channel dimension
       assert X_times_W.shape == (m, n, k)
-      X_times_W_Plus_Delta = X_times_W +  torch.zeros(m, n, k) #self.ErrorSample(diff_dist, num_channels=m, num_rows=n, num_cols=k)                                     
+      X_times_W_Plus_Delta = X_times_W +  torch.zeros(m, n, k, device=X_times_W.device) #self.ErrorSample(diff_dist, num_channels=m, num_rows=n, num_cols=k).to(DEVICE)
       x_times_W_Plus_Delta_Summed = torch.sum(X_times_W_Plus_Delta, dim=1).view(m,k)   # sum over the row dim and reshape to match the expected output shape
       assert x_times_W_Plus_Delta_Summed.shape == (m, k)
       return x_times_W_Plus_Delta_Summed
@@ -80,25 +81,25 @@ class LinearSim(nn.Module):
       Re-implements matrix/tensor multiplication over high-dimensional inputs
       X: Tensor - can be 2d, 3d, or 4d
       W: Tensor - can be 2d, 3d, or 4
-      diff_dist: Tensor 
+      diff_dist: Tensor
       '''
       x_dim = X.dim()
       w_dim = W.dim()
 
       # (1) Map X, W to 4d tensors  (this standardizes the tensor product over all possible cases listed below)
-  
+
       # CASE 1
       if X.dim() == 2 and W.dim() == 2:
         X = X.unsqueeze(0).unsqueeze(0)  #  map (m,n) --> (1, 1, m, n)
         W = W.unsqueeze(0).unsqueeze(0)  #  map (k,n) --> (1, 1, n, k)
-        
-        
+
+
       # CASE 2
       elif X.dim() == 3 and W.dim() == 3:
         assert X.shape[0] == W.shape[0] # make sure that c_x = c_w
         X = X.unsqueeze(0) #             map (c_x,m,n) --> (1, c_x, m, n)
         W = W.unsqueeze(0) #             map (c_w,k,n) --> (1, c_w, k, n)
-        
+
       # CASE 3
       elif X.dim() == 4 and W.dim() == 4:
         assert X.shape[1] == W.shape[1] # make sure that c_x = c_w
@@ -110,8 +111,8 @@ class LinearSim(nn.Module):
         c_w = W.shape[0]
         X_3d = X.unsqueeze(0).repeat(c_w, 1, 1) # map (m, n) --> (1, m, n) --> (c_x, m, n) where c_x = c_w
         X = X_3d.unsqueeze(0) #                   map (c_x, m, n) --> (1, c_x, m, n)
-        W = W.unsqueeze(0) #                     map (c_w, k, n) --> (1, c_w, k, n) 
- 
+        W = W.unsqueeze(0) #                     map (c_w, k, n) --> (1, c_w, k, n)
+
       # CASE 5
       elif X.dim() == 3 and W.dim() == 2:
         c_x = X.shape[0]
@@ -125,7 +126,7 @@ class LinearSim(nn.Module):
         b_w = W.shape[0]
         X = X.unsqueeze(0).repeat(b_w, 1, 1, 1) # map (c_x, m, n) --> (1, c_x, m, n) --> (b_x, c_x, m, n) where b_x = b_w
         W = W #                                                                  shape = (b_w, c_w, m, n)
-        
+
 
       # CASE 7
       elif X.dim() == 4 and W.dim() == 3:
@@ -134,7 +135,7 @@ class LinearSim(nn.Module):
         W = W.unsqueeze(0).repeat(b_x, 1, 1, 1) # map (c_w, k, n) --> (1, c_w, k, n) --> (b_w, c_w, k, n) where b_w = b_x
         X = X #                                                                  shape = (b_x, c_x, m ,n)
 
-      # CASE 8 
+      # CASE 8
       elif X.dim() == 4 and W.dim() == 2:
         b_x = X.shape[0]
         c_x = X.shape[1]
@@ -149,7 +150,7 @@ class LinearSim(nn.Module):
         X_3d = X.unsqueeze(0).repeat(c_w, 1, 1) # map (m, n) --> (1, m, n) --> (c_x, m, n) wher c_x = c_w
         X = X_3d.unsqueeze(0).repeat(b_w, 1, 1, 1) # map (c_x, m, n) --> (1, c_x, m, n) --> (b_x, c_x, m, n) where b_x = b_w
         W = W #                                                                     shape = (b_w, c_w, k, n)
-      
+
       else:
         raise Exception(f"Invalid input dimensions: dim(X) = {X.dim()} and dim(W) = {W.dim()}")
 
@@ -158,21 +159,22 @@ class LinearSim(nn.Module):
       assert X.shape[1] == W.shape[1], "misalligned channel dimension between tensor X and tensor W"
 
       # (2) implement tensor multiplication
-      
+
       # iterate over each batch in the 4d tensor (ex. if a tensor has shape (b, c, m, n) we are iterating over b in this case)
       xw_batch = []
-      batch_iterable = tqdm(range(X.shape[0]), desc="Processing Batch", unit="item") if self.show_batch_processing else range(X.shape[0])
+      batch_iterable = tqdm(range(X.shape[0]), desc="Processing Batch", unit="item") if self.show_batch_processing and X.shape[0] > 1 else range(X.shape[0])
+      channel_iterable = tqdm(range(X.shape[1]), desc="Processing Channel", unit="item") if self.show_batch_processing and X.shape[1] > 1 else range(X.shape[1])
       for b in batch_iterable:
         # iterate over all channels (c) in batch b
         xw_channels = []
-        for c in range(X.shape[1]):
+        for c in channel_iterable:
           X_2d = X[b, c, :, :]  # --> index the 2d matrix inside a specific channel of a specific batch
           W_2d = W[b, c, :, :] # --> index the 2d matrix inside a specific channel of a specific batch
           # 2d matrix product
           xw_channels.append(self.Matmul_2D(X_2d, W_2d, diff_dist))
 
         # stack the 2d matrix products in the channel dimension --> 3d tensor in batch b
-        xw_channels_tensor = torch.stack(xw_channels, dim=0)  
+        xw_channels_tensor = torch.stack(xw_channels, dim=0)
 
         # append the 3d stacked tensor to the xw_batch list
         xw_batch.append(xw_channels_tensor)
@@ -279,8 +281,3 @@ class ScaledDotProdAttention(nn.Module):
       matmul_layer_2 = LinearSim(Weight=value.mT, Bias=None, Error_Dist=self.Error_Dist, show_batch_processing=True)
       attn_output =  matmul_layer_2(attn_weight) #attn_weight @ value
       return attn_output
-
-
-
-
-        

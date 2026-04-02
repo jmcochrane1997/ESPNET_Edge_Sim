@@ -51,7 +51,10 @@ from espnet2.legacy.nets.pytorch_backend.transformer.subsampling import (
     check_short_utt,
 )
 
+from espnet2.edgeSim.LinearLayerSim import LinearSim
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
+print(f"ENCODER SOURCE CODE DEVICE: {DEVICE}")
 
 class EBranchformerEncoderLayer(torch.nn.Module):
     """E-Branchformer encoder layer module.
@@ -172,11 +175,20 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         x_tmp = x_concat.transpose(1, 2)
         x_tmp = self.depthwise_conv_fusion(x_tmp)
         x_tmp = x_tmp.transpose(1, 2)
-        x = x + self.dropout(self.merge_proj(x_concat + x_tmp))  # --> LOCAL LINEAR LAYER! 
+        x_lin = self.merge_proj(x_concat + x_tmp)#.to(DEVICE)
+        x = x + self.dropout(x_lin)  # --> LOCAL LINEAR LAYER! 
         
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        d = {"x_dim": (x_concat + x_tmp).dim(), "w_dim": self.merge_proj.weight.ndimension()}
-        print(d)
+        print("SIMULATING MERGE PROJ LAYER IN EBranchformerEncoderLayer...")
+        with torch.no_grad():
+            weight = self.merge_proj.weight.data.to(DEVICE)
+            bias = self.merge_proj.bias.data.to(DEVICE)
+            linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+            x_sim_input = (x_concat + x_tmp).to(DEVICE)
+            x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
+        
+        assert torch.allclose(x_lin.detach().cpu(), x_sim.detach().cpu(), atol=1e-5), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+        
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         if self.feed_forward is not None:
