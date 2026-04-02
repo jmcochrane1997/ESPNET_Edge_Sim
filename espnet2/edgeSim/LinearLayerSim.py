@@ -19,6 +19,10 @@ print(f"USING STD DEV: {std_dev_env} FOR ERROR SAMPLING IN LINEAR SIMULATION")
 mean = 0
 std_dev = std_dev_env  #*** NOISE LEVEL FROM ENV VARIABLE !! ***
 #normal_dist = torch.distributions.Normal(loc=mean, scale=std_dev)
+THRESH = float(os.getenv("UNIT_TEST_THRESHOLD", "0.001")) # default to 0.0001 if not set
+print(f"UNIT TEST THRESHOLD: {THRESH}")
+
+
 
 
 class LinearSim(nn.Module):

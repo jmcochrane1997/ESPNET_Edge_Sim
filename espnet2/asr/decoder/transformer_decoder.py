@@ -44,7 +44,7 @@ import numpy as np
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
 print(f"TRANSFORMER DECODER SOURCE CODE DEVICE: {DEVICE}")
 SIMULATE = os.getenv("APPLY_SIM", "False") # default to False if the environment variable is not set
-
+THRESH = float(os.getenv("UNIT_TEST_THRESHOLD", "0.001")) # default to 0.0001 if not set
 
 class BaseTransformerDecoder(
     AbsDecoder, BatchScorerInterface, MaskParallelScorerInterface
@@ -216,7 +216,7 @@ class BaseTransformerDecoder(
             max_diff = torch.max(torch.abs(x - x_sim)).item() # compute the max absolute difference between the original output layer output and the simulated output layer output
 #            print(f"MAX DIFF: {max_diff}")
             if SIMULATE == "False":
-                assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder output layer!"
+                assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder output layer!"
             x = x_sim # use the sim output as the new x to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 

@@ -16,6 +16,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"CGMLP SOURCE CODE DEVICE: {DEVICE}")
 
 SIMULATE = os.getenv("APPLY_SIM", "False") # default to False if the environment variable is not set
+THRESH = float(os.getenv("UNIT_TEST_THRESHOLD", "0.001")) # default to 0.0001 if not set
 
 class ConvolutionalSpatialGatingUnit(torch.nn.Module):
     """Convolutional Spatial Gating Unit (CSGU)."""
@@ -94,7 +95,7 @@ class ConvolutionalSpatialGatingUnit(torch.nn.Module):
             max_diff = torch.max(torch.abs(x_g - x_sim)).item()
 #            print(f"MAX DIFF: {max_diff}")
             if SIMULATE == "False":
-                assert torch.allclose(x_g.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in CSGU!"
+                assert torch.allclose(x_g.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in CSGU!"
             x_g = x_sim # use the sim output as the new x_g to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
             
@@ -158,7 +159,7 @@ class ConvolutionalGatingMLP(torch.nn.Module):
         max_diff = torch.max(torch.abs(xs_pad - x_sim)).item()
 #        print(f"MAX DIFF: {max_diff}")
         if SIMULATE == "False":
-            assert torch.allclose(xs_pad.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in CGMLP!"
+            assert torch.allclose(xs_pad.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in CGMLP!"
         xs_pad = x_sim # use the sim output as the new xs_pad to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
@@ -183,7 +184,7 @@ class ConvolutionalGatingMLP(torch.nn.Module):
         max_diff = torch.max(torch.abs(xs_pad - x_sim)).item()
 #        print(f"MAX DIFF: {max_diff}")
         if SIMULATE == "False":
-            assert torch.allclose(xs_pad.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in CGMLP!"
+            assert torch.allclose(xs_pad.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in CGMLP!"
         xs_pad = x_sim # use the sim output as the new xs_pad to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
