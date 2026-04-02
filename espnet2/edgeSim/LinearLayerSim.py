@@ -6,6 +6,7 @@ from tqdm import tqdm
 torch.manual_seed(42)
 import os
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
 
 # load the simulation boolean as an environment variable
 SIMULATE = os.getenv("APPLY_SIM", "False")
@@ -14,6 +15,10 @@ print(f"APPLY SIMULATION: {SIMULATE}")
 # load the standard deviation as an environment variable
 std_dev_env = float(os.getenv("STD_DEV", "0.01")) # default to 0.01 if not set
 print(f"USING STD DEV: {std_dev_env} FOR ERROR SAMPLING IN LINEAR SIMULATION")
+# create the error dist.
+mean = 0
+std_dev = std_dev_env  #*** NOISE LEVEL FROM ENV VARIABLE !! ***
+#normal_dist = torch.distributions.Normal(loc=mean, scale=std_dev)
 
 
 class LinearSim(nn.Module):
@@ -48,10 +53,7 @@ class LinearSim(nn.Module):
       '''
       Generate (gaussian) error samples
       '''
-      mean = 0
-      std_dev = std_dev_env  #*** NOISE LEVEL FROM ENV VARIABLE !! ***
-      normal_dist = torch.distributions.Normal(loc=mean, scale=std_dev)
-      samples = normal_dist.sample((num_channels, num_rows, num_cols))
+      samples = torch.randn((num_channels, num_rows, num_cols), device=DEVICE) * std_dev + mean 
       return samples
       #assert self.Error_Dist.dim == 3, "error: expected a three-dimensional error distribution"
 
