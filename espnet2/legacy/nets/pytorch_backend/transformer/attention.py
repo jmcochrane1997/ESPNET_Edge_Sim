@@ -113,7 +113,7 @@ class MultiHeadedAttention(nn.Module):
         max_diff = torch.max(torch.abs(q - x_sim)).item()
 #        print(f"MAX DIFF: {max_diff}")
         if SIMULATE == "False":
-            assert torch.allclose(q.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+            assert torch.allclose(q.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
 #        print("LINEAR_Q SIMULATION SUCCESSFUL!")
         q = x_sim # use the sim output as the new q to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -138,7 +138,7 @@ class MultiHeadedAttention(nn.Module):
             max_diff = torch.max(torch.abs(k - x_sim)).item()
 #            print(f"MAX DIFF: {max_diff}")
             if SIMULATE == "False":
-                assert torch.allclose(k.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                assert torch.allclose(k.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
             k = x_sim # use the sim output as the new k to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
             
@@ -160,7 +160,7 @@ class MultiHeadedAttention(nn.Module):
             max_diff = torch.max(torch.abs(v - x_sim)).item()
 #            print(f"MAX DIFF: {max_diff}")
             if SIMULATE == "False":
-                assert torch.allclose(v.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                assert torch.allclose(v.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
             v = x_sim # use the sim output as the new v to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         else:
@@ -179,7 +179,7 @@ class MultiHeadedAttention(nn.Module):
             max_diff = torch.max(torch.abs(k - x_sim)).item()
 #            print(f"MAX DIFF: {max_diff}")
             if SIMULATE == "False":
-                assert torch.allclose(k.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                assert torch.allclose(k.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
             k = x_sim # use the sim output as the new k to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
             
@@ -198,7 +198,7 @@ class MultiHeadedAttention(nn.Module):
             max_diff = torch.max(torch.abs(v - x_sim)).item()
 #            print(f"MAX DIFF: {max_diff}")
             if SIMULATE == "False":
-                assert torch.allclose(v.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                assert torch.allclose(v.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
             v = x_sim # use the sim output as the new v to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -262,7 +262,7 @@ class MultiHeadedAttention(nn.Module):
         max_diff = torch.max(torch.abs(linear_out - x_sim)).item()
  #       print(f"MAX DIFF: {max_diff}")
         if SIMULATE == "False":
-            assert torch.allclose(linear_out.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+            assert torch.allclose(linear_out.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
         linear_out = x_sim # use the sim output as the new linear_out to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -328,7 +328,7 @@ class MultiHeadedAttention(nn.Module):
             max_diff = torch.max(torch.abs(linear_out - x_sim)).item()
 #            print(f"MAX DIFF: {max_diff}")
             if SIMULATE == "False":
-                assert torch.allclose(linear_out.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                assert torch.allclose(linear_out.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
             
             linear_out = x_sim # use the sim output as the new linear_out to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -377,7 +377,7 @@ class MultiHeadedAttention(nn.Module):
                     max_diff = torch.max(torch.abs(q - x_sim)).item() #max diff is between sim output and the new q after linear layer, not the old q input
 #                    print(f"MAX DIFF: {max_diff}")
                     if SIMULATE == "False":
-                        assert torch.allclose(q.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                        assert torch.allclose(q.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
                     q = x_sim # use the sim output as the new q to ensure that the sim layer is actually running during inference
                     # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     
@@ -399,7 +399,7 @@ class MultiHeadedAttention(nn.Module):
                     max_diff = torch.max(torch.abs(k - x_sim)).item() #max diff is between sim output and the new k after linear layer, not the old k input
 #                    print(f"MAX DIFF: {max_diff}")
                     if SIMULATE == "False":
-                        assert torch.allclose(k.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                        assert torch.allclose(k.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
                     k = x_sim # use the sim output as the new k to ensure that the sim layer is actually running during inference
                     #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     
@@ -421,7 +421,7 @@ class MultiHeadedAttention(nn.Module):
                     max_diff = torch.max(torch.abs(v - x_sim)).item() #max diff is between sim output and the new v after linear layer, not the old v input
 #                    print(f"MAX DIFF: {max_diff}")
                     if SIMULATE == "False":
-                        assert torch.allclose(v.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                        assert torch.allclose(v.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
                     v = x_sim # use the sim output as the new v to ensure that the sim layer is actually running during inference
                     # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     
@@ -460,7 +460,7 @@ class MultiHeadedAttention(nn.Module):
                     max_diff = torch.max(torch.abs(out - x_sim)).item() #max diff is between sim output and the new v after linear layer, not the old v input
 #                    print(f"MAX DIFF: {max_diff}")
                     if SIMULATE == "False":
-                        assert torch.allclose(out.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                        assert torch.allclose(out.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
                     out = x_sim # use the sim output as the new out to ensure that the sim layer is actually running during inference
                     # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     
@@ -502,7 +502,7 @@ class MultiHeadedAttention(nn.Module):
                     max_diff = torch.max(torch.abs(out - x_sim)).item() #max diff is between sim output and the new out after linear layer, not the old out input
 #                    print(f"MAX DIFF: {max_diff}")
                     if SIMULATE == "False":
-                        assert torch.allclose(out.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                        assert torch.allclose(out.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer! {max_diff}"
                     out = x_sim # use the sim output as the new out to ensure that the sim layer is actually running during inference
                     # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     return out
