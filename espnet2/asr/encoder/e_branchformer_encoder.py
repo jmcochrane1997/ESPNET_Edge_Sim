@@ -52,6 +52,7 @@ from espnet2.legacy.nets.pytorch_backend.transformer.subsampling import (
 )
 
 from espnet2.edgeSim.LinearLayerSim import LinearSim
+import numpy as np
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
 print(f"ENCODER SOURCE CODE DEVICE: {DEVICE}")
@@ -189,7 +190,7 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         
         print("sim output:"+ str(x_sim))
         print("gt output:"+ str(x_lin))
-        assert torch.allclose(x_lin.detach().cpu(), x_sim.detach().cpu(), atol=1e-5), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+        assert np.allclose(x_lin.detach().cpu().numpy(), x_sim.detach().cpu().numpy(), atol=1e-5), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
         print("MERGE PROJ LAYER SIMULATION SUCCESSFUL!")
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
