@@ -11,6 +11,12 @@ from torch import nn
 
 from espnet2.legacy.nets.pytorch_backend.transformer.layer_norm import LayerNorm
 
+from espnet2.edgeSim.LinearLayerSim import LinearSim
+
+import numpy as np
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
+
+print(f"TRANSFORMER DECODER SOURCE CODE DEVICE: {DEVICE}")
 
 class DecoderLayer(nn.Module):
     """Single decoder layer module.
@@ -126,8 +132,18 @@ class DecoderLayer(nn.Module):
             x = residual + self.concat_linear1(tgt_concat)   #         --> LOCAL LINEAR LAYER!
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            d = {"x_dim": tgt_concat.dim(), "w_dim": self.concat_linear1.weight.ndimension()}
-            print(d)
+            print("SIMULATING FIRST LINEAR LAYER IN TRANSFORMER DECODER...")
+            with torch.no_grad():
+                weight = self.concat_linear1.weight.data.to(DEVICE)
+                bias = self.concat_linear1.bias.data.to(DEVICE)
+                linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                x_sim_input = tgt_concat.to(DEVICE) # use the old tgt_concat as the sim input
+                x_sim = linear_sim_layer(x_sim_input).to(DEVICE) + residual.to(DEVICE) # don't forget to add the residual after the linear layer!
+            #print("sim output:"+ str(x_sim))
+            #print("gt output:"+ str(x))
+            max_diff = torch.max(torch.abs(x - x_sim)).item()
+            print(f"MAX DIFF: {max_diff}")
+            assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder first linear layer!"
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         else:
             x = residual + self.dropout(self.self_attn(tgt_q, tgt, tgt, tgt_q_mask))  # MultiHeadedAttention
@@ -170,8 +186,18 @@ class DecoderLayer(nn.Module):
             x = residual + self.concat_linear2(x_concat) #         --> LOCAL LINEAR LAYER!
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            d = {"x_dim": x_concat.dim(), "w_dim": self.concat_linear2.weight.ndimension()}
-            print(d)
+            print("SIMULATING SECOND LINEAR LAYER IN TRANSFORMER DECODER...")
+            with torch.no_grad():
+                weight = self.concat_linear2.weight.data.to(DEVICE)
+                bias = self.concat_linear2.bias.data.to(DEVICE)
+                linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                x_sim_input = x_concat.to(DEVICE) # use the old x_concat as the sim input
+                x_sim = linear_sim_layer(x_sim_input).to(DEVICE) + residual.to(DEVICE) # don't forget to add the residual after the linear layer!
+            #print("sim output:"+ str(x_sim))
+            #print("gt output:"+ str(x))
+            max_diff = torch.max(torch.abs(x - x_sim)).item()
+            print(f"MAX DIFF: {max_diff}")
+            assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder second linear layer!"
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         else:
             x = residual + self.dropout(self.src_attn(x, memory, memory, memory_mask))

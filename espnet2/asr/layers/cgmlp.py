@@ -10,7 +10,10 @@ import torch
 
 from espnet2.legacy.nets.pytorch_backend.nets_utils import get_activation
 from espnet2.legacy.nets.pytorch_backend.transformer.layer_norm import LayerNorm
-
+from espnet2.edgeSim.LinearLayerSim import LinearSim
+import numpy as np
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
+print(f"CGMLP SOURCE CODE DEVICE: {DEVICE}")
 
 class ConvolutionalSpatialGatingUnit(torch.nn.Module):
     """Convolutional Spatial Gating Unit (CSGU)."""
@@ -70,12 +73,28 @@ class ConvolutionalSpatialGatingUnit(torch.nn.Module):
         x_g = self.norm(x_g)  # (N, T, D/2)
         x_g = self.conv(x_g.transpose(1, 2)).transpose(1, 2)  # (N, T, D/2)
         if self.linear is not None:
-            x_g = self.linear(x_g) #         --> LOCAL LINEAR LAYER!
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            d = {"x_dim": x_g.dim(), "w_dim": self.linear.weight.ndimension()}
-            print(d)
+            print("SIMULATING LINEAR LAYER IN CSGU...")
+            with torch.no_grad():
+                weight = self.linear.weight.data.to(DEVICE)
+                bias = self.linear.bias.data.to(DEVICE)
+                linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                x_sim_input = x_g.to(DEVICE) # use the old x_g as the sim input
+                x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
+            # |
+            # V
+            
+            x_g = self.linear(x_g).to(DEVICE) #         --> LOCAL LINEAR LAYER!
+            
+            # Ʌ
+            # |
+            max_diff = torch.max(torch.abs(x_g - x_sim)).item()
+            print(f"MAX DIFF: {max_diff}")
+            assert torch.allclose(x_g.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in CSGU!"
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+            
+   
 
         if gate_add is not None:
             x_g = x_g + gate_add
@@ -118,19 +137,46 @@ class ConvolutionalGatingMLP(torch.nn.Module):
         else:
             xs_pad, pos_emb = x, None
 
-        xs_pad = self.channel_proj1(xs_pad)  # size -> linear_units         --> LOCAL LINEAR LAYER!
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        d = {"x_dim": xs_pad.dim(), "w_dim": self.channel_proj1[0].weight.ndimension()}
-        print(d)
+        print("SIMULATING FIRST LINEAR LAYER IN CGMLP...")
+        with torch.no_grad():
+            weight = self.channel_proj1[0].weight.data.to(DEVICE)
+            bias = self.channel_proj1[0].bias.data.to(DEVICE)
+            linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+            x_sim_input = xs_pad.to(DEVICE) # use the old xs_pad as the sim input
+            x_sim = self.channel_proj1[1](linear_sim_layer(x_sim_input).to(DEVICE)).to(DEVICE)  #don't forget to apply the gelu after the linear layer!
+        # |
+        # V
+        xs_pad = self.channel_proj1(xs_pad).to(DEVICE)  # size -> linear_units         --> LOCAL LINEAR LAYER!
+        
+        # Ʌ
+        # |
+        max_diff = torch.max(torch.abs(xs_pad - x_sim)).item()
+        print(f"MAX DIFF: {max_diff}")
+        assert torch.allclose(xs_pad.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in CGMLP!"
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
         xs_pad = self.csgu(xs_pad)  # ConvolutionalSpatialGatingUnit # linear_units -> linear_units/2    
         
-             
-        xs_pad = self.channel_proj2(xs_pad)  # linear_units/2 -> size       --> LOCAL LINEAR LAYER!
+        
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        d = {"x_dim": xs_pad.dim(), "w_dim": self.channel_proj2.weight.ndimension()}
-        print(d)
+        print("SIMULATING SECOND LINEAR LAYER IN CGMLP...")
+        with torch.no_grad():
+            weight = self.channel_proj2.weight.data.to(DEVICE)
+            bias = self.channel_proj2.bias.data.to(DEVICE)
+            linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+            x_sim_input = xs_pad.to(DEVICE) # use the old xs_pad as the sim input
+            x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
+        # |
+        # V
+        
+        xs_pad = self.channel_proj2(xs_pad).to(DEVICE)  # linear_units/2 -> size       --> LOCAL LINEAR LAYER!
+        
+        # Ʌ
+        # |
+        max_diff = torch.max(torch.abs(xs_pad - x_sim)).item()
+        print(f"MAX DIFF: {max_diff}")
+        assert torch.allclose(xs_pad.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in CGMLP!"
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         if pos_emb is not None:

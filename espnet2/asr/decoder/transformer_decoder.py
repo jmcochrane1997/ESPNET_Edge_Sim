@@ -38,6 +38,11 @@ from espnet2.legacy.nets.scorer_interface import (
     MaskParallelScorerInterface,
 )
 
+from espnet2.edgeSim.LinearLayerSim import LinearSim
+
+import numpy as np
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
+print(f"TRANSFORMER DECODER SOURCE CODE DEVICE: {DEVICE}")
 
 class BaseTransformerDecoder(
     AbsDecoder, BatchScorerInterface, MaskParallelScorerInterface
@@ -189,12 +194,24 @@ class BaseTransformerDecoder(
         if self.output_layer is not None:
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            d = {"x_dim": x.dim(), "w_dim": self.output_layer.weight.ndimension()}
-            print(d)
+            print("SIMULATING OUTPUT LAYER IN TRANSFORMER DECODER...")
+            with torch.no_grad():
+                weight = self.output_layer.weight.data.to(DEVICE)
+                bias = self.output_layer.bias.data.to(DEVICE)
+                linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                x_sim_input = x.to(DEVICE) # use the old x as the sim input
+                x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
             # |
             # V
-            # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+           
             x = self.output_layer(x)  # --> LOCAL LINEAR LAYER!
+            
+            # Ʌ
+            # |
+            max_diff = torch.max(torch.abs(x - x_sim)).item() # compute the max absolute difference between the original output layer output and the simulated output layer output
+            print(f"MAX DIFF: {max_diff}")
+            assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder output layer!"
+            # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         olens = tgt_mask.sum(1)
         if return_hs:

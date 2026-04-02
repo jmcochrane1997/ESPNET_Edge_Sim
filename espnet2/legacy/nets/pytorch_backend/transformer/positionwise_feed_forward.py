@@ -7,6 +7,10 @@
 """Positionwise feed forward layer definition."""
 
 import torch
+from espnet2.edgeSim.LinearLayerSim import LinearSim
+import numpy as np
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
+print(f"POSITIONWISE FEED FORWARD SOURCE CODE DEVICE: {DEVICE}")
 
 
 class PositionwiseFeedForward(torch.nn.Module):
@@ -29,20 +33,40 @@ class PositionwiseFeedForward(torch.nn.Module):
 
     def forward(self, x):
         """Forward function."""
-        w1 = self.w_1(x)  #         --> LOCAL LINEAR LAYER!
+        w1 = self.w_1(x).to(DEVICE)  #         --> LOCAL LINEAR LAYER!
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        d = {"x_dim": x.dim(), "w_dim": self.w_1.weight.ndimension()}
-        print(d)
+        print("SIMULATING FIRST LINEAR LAYER IN POSITIONWISE FEED FORWARD...")
+        with torch.no_grad():
+            weight = self.w_1.weight.data.to(DEVICE)
+            bias = self.w_1.bias.data.to(DEVICE)
+            linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+            x_sim_input = x.to(DEVICE) # use the old x as the sim input
+            x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
+        #print("sim output:"+ str(x_sim))
+        #print("gt output:"+ str(w1))
+        max_diff = torch.max(torch.abs(w1 - x_sim)).item()
+        print(f"MAX DIFF: {max_diff}")
+        assert torch.allclose(w1.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in PositionwiseFeedForward!"
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
         
         a1 = self.activation(w1)
         d1 = self.dropout(a1)
-        w2 = self.w_2(d1) #         --> LOCAL LINEAR LAYER!
+        w2 = self.w_2(d1).to(DEVICE) #         --> LOCAL LINEAR LAYER!
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        d = {"x_dim": d1.dim(), "w_dim": self.w_2.weight.ndimension()}
-        print(d)
+        print("SIMULATING SECOND LINEAR LAYER IN POSITIONWISE FEED FORWARD...")
+        with torch.no_grad():
+            weight = self.w_2.weight.data.to(DEVICE)
+            bias = self.w_2.bias.data.to(DEVICE)
+            linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+            x_sim_input = d1.to(DEVICE) # use the old d1 as the sim input
+            x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
+        #print("sim output:"+ str(x_sim))
+        #print("gt output:"+ str(w2))
+        max_diff = torch.max(torch.abs(w2 - x_sim)).item()
+        print(f"MAX DIFF: {max_diff}")
+        assert torch.allclose(w2.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in PositionwiseFeedForward!"
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
-        
+    
         return w2   
