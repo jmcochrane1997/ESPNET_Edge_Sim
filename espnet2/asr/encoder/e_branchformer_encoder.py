@@ -190,6 +190,8 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         
         print("sim output:"+ str(x_sim))
         print("gt output:"+ str(x_lin))
+        max_diff = torch.max(torch.abs(x_lin - x_sim)).item()
+        print(f"MAX DIFF: {max_diff}")
         assert torch.allclose(x_lin.detach().cpu(), x_sim.detach().cpu(), atol=1e-4), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
         print("MERGE PROJ LAYER SIMULATION SUCCESSFUL!")
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
