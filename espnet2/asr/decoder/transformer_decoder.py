@@ -43,7 +43,7 @@ from espnet2.edgeSim.LinearLayerSim import LinearSim
 import numpy as np
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
 print(f"TRANSFORMER DECODER SOURCE CODE DEVICE: {DEVICE}")
-SIMULATE = os.getenv("SIMULATE", "False") # default to False if the environment variable is not set
+SIMULATE = os.getenv("APPLY_SIM", "False") # default to False if the environment variable is not set
 
 
 class BaseTransformerDecoder(
