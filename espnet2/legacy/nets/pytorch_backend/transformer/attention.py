@@ -116,40 +116,76 @@ class MultiHeadedAttention(nn.Module):
         if expand_kv:
             k_shape = key.shape
             k = (
-                self.linear_k(key[:1, :, :])               # --> LOCAL LINEAR LAYER!
-                .expand(n_batch, k_shape[1], k_shape[2])
-                .view(n_batch, -1, self.h, self.d_k)
+                self.linear_k(key[:1, :, :]).expand(n_batch, k_shape[1], k_shape[2]).view(n_batch, -1, self.h, self.d_k).to(DEVICE)  # --> LOCAL LINEAR LAYER!
             )
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            d = {"x_dim": key[:1, :, :].dim(), "w_dim": self.linear_k.weight.ndimension()}
-            print(d)
+            print("SIMULATING LINEAR_K IN MHA WITH EXPAND_KV...")
+            with torch.no_grad():
+                weight = self.linear_k.weight.data.to(DEVICE)
+                bias = self.linear_k.bias.data.to(DEVICE)
+                linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                x_sim_input = key[:1, :, :].to(DEVICE)
+                x_sim = linear_sim_layer(x_sim_input).expand(n_batch, k_shape[1], k_shape[2]).view(n_batch, -1, self.h, self.d_k).to(DEVICE)
+            #print("sim output:"+ str(x_sim))
+            #print("gt output:"+ str(k))
+            max_diff = torch.max(torch.abs(k - x_sim)).item()
+            print(f"MAX DIFF: {max_diff}")
+            assert torch.allclose(k.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
             
             v_shape = value.shape
             v = (
-                self.linear_v(value[:1, :, :])               # --> LOCAL LINEAR LAYER!
-                .expand(n_batch, v_shape[1], v_shape[2])
-                .view(n_batch, -1, self.h, self.d_k)
+                self.linear_v(value[:1, :, :]).expand(n_batch, v_shape[1], v_shape[2]).view(n_batch, -1, self.h, self.d_k).to(DEVICE)  # --> LOCAL LINEAR LAYER!
             )
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            d = {"x_dim": value[:1, :, :].dim(), "w_dim": self.linear_v.weight.ndimension()}
-            print(d)
+            print("SIMULATING LINEAR_V IN MHA WITH EXPAND_KV...")
+            with torch.no_grad():
+                weight = self.linear_v.weight.data.to(DEVICE)
+                bias = self.linear_v.bias.data.to(DEVICE)
+                linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                x_sim_input = value[:1, :, :].to(DEVICE)
+                x_sim = linear_sim_layer(x_sim_input).expand(n_batch, v_shape[1], v_shape[2]).view(n_batch, -1, self.h, self.d_k).to(DEVICE)
+            #print("sim output:"+ str(x_sim))
+            #print("gt output:"+ str(v))
+            max_diff = torch.max(torch.abs(v - x_sim)).item()
+            print(f"MAX DIFF: {max_diff}")
+            assert torch.allclose(v.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         else:
-            k = self.linear_k(key).view(n_batch, -1, self.h, self.d_k)   # --> LOCAL LINEAR LAYER!
+            k = self.linear_k(key).view(n_batch, -1, self.h, self.d_k).to(DEVICE)   # --> LOCAL LINEAR LAYER!
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            d = {"x_dim": key.dim(), "w_dim": self.linear_k.weight.ndimension()}
-            print(d)
+            print("SIMULATING LINEAR_K IN MHA...")
+            with torch.no_grad():
+                weight = self.linear_k.weight.data.to(DEVICE)
+                bias = self.linear_k.bias.data.to(DEVICE)
+                linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                x_sim_input = key.to(DEVICE)
+                x_sim = linear_sim_layer(x_sim_input).view(n_batch, -1, self.h, self.d_k).to(DEVICE)
+            #print("sim output:"+ str(x_sim))
+            #print("gt output:"+ str(k))
+            max_diff = torch.max(torch.abs(k - x_sim)).item()
+            print(f"MAX DIFF: {max_diff}")
+            assert torch.allclose(k.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
             
-            v = self.linear_v(value).view(n_batch, -1, self.h, self.d_k)  # --> LOCAL LINEAR LAYER!
+            v = self.linear_v(value).view(n_batch, -1, self.h, self.d_k).to(DEVICE)  # --> LOCAL LINEAR LAYER!
 
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            d = {"x_dim": value.dim(), "w_dim": self.linear_v.weight.ndimension()}
-            print(d)
+            print("SIMULATING LINEAR_V IN MHA...")
+            with torch.no_grad():
+                weight = self.linear_v.weight.data.to(DEVICE)
+                bias = self.linear_v.bias.data.to(DEVICE)
+                linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                x_sim_input = value.to(DEVICE)
+                x_sim = linear_sim_layer(x_sim_input).view(n_batch, -1, self.h, self.d_k).to(DEVICE)
+            #print("sim output:"+ str(x_sim))
+            #print("gt output:"+ str(v))
+            max_diff = torch.max(torch.abs(v - x_sim)).item()
+            print(f"MAX DIFF: {max_diff}")
+            assert torch.allclose(v.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         q = q.transpose(1, 2)  # (batch, head, time1, d_k)
@@ -186,7 +222,7 @@ class MultiHeadedAttention(nn.Module):
             self.attn = torch.softmax(scores, dim=-1)  # (batch, head, time1, time2)
 
         p_attn = self.dropout(self.attn)
-        x = torch.matmul(p_attn, value)  # (batch, head, time1, d_k)        # --> LOCAL LINEAR LAYER!
+        x = torch.matmul(p_attn, value)  # (batch, head, time1, d_k)        # --> LOCAL MATMUL LAYER!
         
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         d = {"x_dim": p_attn.dim(), "w_dim": value.dim()}
@@ -197,11 +233,21 @@ class MultiHeadedAttention(nn.Module):
             x.transpose(1, 2).contiguous().view(n_batch, -1, self.h * self.d_k)
         )  # (batch, time1, d_model)
         
-        linear_out = self.linear_out(x)  # (batch, time1, d_model)      # --> LOCAL LINEAR LAYER!
+        linear_out = self.linear_out(x).to(DEVICE)  # (batch, time1, d_model)      # --> LOCAL LINEAR LAYER!
         
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        d = {"x_dim": x.dim(), "w_dim": self.linear_out.weight.ndimension()}
-        print(d)
+        print("SIMULATING LINEAR_OUT IN MHA...")
+        with torch.no_grad():
+            weight = self.linear_out.weight.data.to(DEVICE)
+            bias = self.linear_out.bias.data.to(DEVICE)
+            linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+            x_sim_input = x.to(DEVICE)
+            x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
+        #print("sim output:"+ str(x_sim))
+        #print("gt output:"+ str(linear_out))
+        max_diff = torch.max(torch.abs(linear_out - x_sim)).item()
+        print(f"MAX DIFF: {max_diff}")
+        assert torch.allclose(linear_out.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         return linear_out  # (batch, time1, d_model)      # --> LOCAL LINEAR LAYER!
@@ -232,7 +278,7 @@ class MultiHeadedAttention(nn.Module):
 
             # The shape of mask must be broadcastable to the shape of attention weights
 
-            out = torch.nn.functional.scaled_dot_product_attention(                         # --> LOCAL LINEAR LAYER!
+            out = torch.nn.functional.scaled_dot_product_attention(                         # --> LOCAL ATTN LAYER!
                 q,
                 k,
                 v,
@@ -251,11 +297,21 @@ class MultiHeadedAttention(nn.Module):
             
             out = out.transpose(1, 2)  # (batch, time1, head, d_k)
             out = out.reshape(out.shape[0], out.shape[1], -1)  # (batch, time1, d_model)
-            linear_out = self.linear_out(out)  # (batch, time1, d_model)                        # --> LOCAL LINEAR LAYER!
+            linear_out = self.linear_out(out).to(DEVICE)  # (batch, time1, d_model)                        # --> LOCAL LINEAR LAYER!
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            d = {"x_dim": out.dim(), "w_dim": self.linear_out.weight.ndimension()}
-            print(d)
+            print("SIMULATING LINEAR_OUT IN MHA WITH SDPA...")
+            with torch.no_grad():
+                weight = self.linear_out.weight.data.to(DEVICE)
+                bias = self.linear_out.bias.data.to(DEVICE)
+                linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                x_sim_input = out.to(DEVICE)
+                x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
+            #print("sim output:"+ str(x_sim))
+            #print("gt output:"+ str(linear_out))
+            max_diff = torch.max(torch.abs(linear_out - x_sim)).item()
+            print(f"MAX DIFF: {max_diff}")
+            assert torch.allclose(linear_out.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
             
             return linear_out  # (batch, time1, d_model)                      
@@ -285,31 +341,64 @@ class MultiHeadedAttention(nn.Module):
                     v, _, _, _ = unpad_input(value, key_nonpad_mask)[:4]
 
                     # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                    d = {"x_dim": q.dim(), "w_dim": self.linear_q.weight.ndimension()}
-                    print(d)
+                    print("SIMULATING LINEAR_Q IN MHA WITH FLASH_ATTN...")
+                    with torch.no_grad():
+                        weight = self.linear_q.weight.data.to(DEVICE)
+                        bias = self.linear_q.bias.data.to(DEVICE)
+                        linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                        x_sim_input = q.to(DEVICE) #use the old q as the sim input
+                        x_sim = linear_sim_layer(x_sim_input).reshape(-1, self.h, self.d_k).to(DEVICE)
                     # |
                     # V
-                    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 
-
-                    q = self.linear_q(q).reshape(-1, self.h, self.d_k)  # --> LOCAL LINEAR LAYER!
+                     
+                    q = self.linear_q(q).reshape(-1, self.h, self.d_k).to(DEVICE)  # --> LOCAL LINEAR LAYER!
                     
-                    # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                    d = {"x_dim": k.dim(), "w_dim": self.linear_k.weight.ndimension()}
-                    print(d)
+                    # Ʌ
                     # |
-                    # V
+                    max_diff = torch.max(torch.abs(q - x_sim)).item() #max diff is between sim output and the new q after linear layer, not the old q input
+                    print(f"MAX DIFF: {max_diff}")
+                    assert torch.allclose(q.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
                     # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     
-                    k = self.linear_k(k).reshape(-1, self.h, self.d_k)  # --> LOCAL LINEAR LAYER!
-                    
                     # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                    d = {"x_dim": v.dim(), "w_dim": self.linear_v.weight.ndimension()}
-                    print(d)
+                    print("SIMULATING LINEAR_K IN MHA WITH FLASH_ATTN...")
+                    with torch.no_grad():
+                        weight = self.linear_k.weight.data.to(DEVICE)
+                        bias = self.linear_k.bias.data.to(DEVICE)
+                        linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                        x_sim_input = k.to(DEVICE) #use the old k as the sim input
+                        x_sim = linear_sim_layer(x_sim_input).reshape(-1, self.h, self.d_k).to(DEVICE)
                     # |
                     # V
-                    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     
-                    v = self.linear_v(v).reshape(-1, self.h, self.d_k)  # --> LOCAL LINEAR LAYER!
+                    k = self.linear_k(k).reshape(-1, self.h, self.d_k).to(DEVICE)  # --> LOCAL LINEAR LAYER!
+                    
+                    # Ʌ
+                    # |
+                    max_diff = torch.max(torch.abs(k - x_sim)).item() #max diff is between sim output and the new k after linear layer, not the old k input
+                    print(f"MAX DIFF: {max_diff}")
+                    assert torch.allclose(k.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                    #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+                    
+                    # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+                    print("SIMULATING LINEAR_V IN MHA WITH FLASH_ATTN...")
+                    with torch.no_grad():
+                        weight = self.linear_v.weight.data.to(DEVICE)
+                        bias = self.linear_v.bias.data.to(DEVICE)
+                        linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                        x_sim_input = v.to(DEVICE) #use the old v as the sim input
+                        x_sim = linear_sim_layer(x_sim_input).reshape(-1, self.h, self.d_k).to(DEVICE)
+                    # |
+                    # V
+                    
+                    v = self.linear_v(v).reshape(-1, self.h, self.d_k).to(DEVICE)  # --> LOCAL LINEAR LAYER!
+                    
+                    # Ʌ
+                    # |
+                    max_diff = torch.max(torch.abs(v - x_sim)).item() #max diff is between sim output and the new v after linear layer, not the old v input
+                    print(f"MAX DIFF: {max_diff}")
+                    assert torch.allclose(v.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     
                     q = self.q_norm(q)
                     k = self.k_norm(k)
@@ -325,17 +414,34 @@ class MultiHeadedAttention(nn.Module):
                         dropout_p=self.dropout_rate if self.training else 0.0,
                         causal=self.causal,
                     )  # (total, nheads, headdim)
+                    
+                    print("FLASH_ATTN_VARLEN_FUNC DOCSTRING:")
+                    print(flash_attn_varlen_func.__doc__)
+
+                    
 
                     out = out.reshape(out.shape[0], -1)
                     
                     # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                    d = {"x_dim": out.dim(), "w_dim": self.linear_out.weight.ndimension()}
-                    print(d)
+                    print("SIMULATING LINEAR_OUT IN MHA WITH FLASH_ATTN...")
+                    with torch.no_grad():
+                        weight = self.linear_out.weight.data.to(DEVICE)
+                        bias = self.linear_out.bias.data.to(DEVICE)
+                        linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                        x_sim_input = out.to(DEVICE) #  use the old out as the sim input
+                        x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
                     # |
                     # V
-                    # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     
-                    out = self.linear_out(out)                         # --> LOCAL LINEAR LAYER!
+                    out = self.linear_out(out).to(DEVICE)                         # --> LOCAL LINEAR LAYER!
+                    
+                    # Ʌ
+                    # |
+                    max_diff = torch.max(torch.abs(out - x_sim)).item() #max diff is between sim output and the new v after linear layer, not the old v input
+                    print(f"MAX DIFF: {max_diff}")
+                    assert torch.allclose(out.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+                    
                     out = pad_input(out, indices_q, query.shape[0], query.shape[1])
                     return out
 
@@ -357,13 +463,24 @@ class MultiHeadedAttention(nn.Module):
                     out = out.reshape(out.shape[0], out.shape[1], -1)
                     
                     # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                    d = {"x_dim": out.dim(), "w_dim": self.linear_out.weight.ndimension()}
-                    print(d)
+                    print("SIMULATING LINEAR_OUT IN MHA WITH FLASH_ATTN...")
+                    with torch.no_grad():
+                        weight = self.linear_out.weight.data.to(DEVICE)
+                        bias = self.linear_out.bias.data.to(DEVICE)
+                        linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                        x_sim_input = out.to(DEVICE) # use the old out as the sim input
+                        x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
                     # |
                     # V
-                    # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     
-                    out = self.linear_out(out)                         # --> LOCAL LINEAR LAYER!
+                    out = self.linear_out(out).to(DEVICE)                         # --> LOCAL LINEAR LAYER!
+                    
+                    # Ʌ
+                    # |
+                    max_diff = torch.max(torch.abs(out - x_sim)).item() #max diff is between sim output and the new out after linear layer, not the old out input
+                    print(f"MAX DIFF: {max_diff}")
+                    assert torch.allclose(out.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+                    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     return out
 
             except Exception as e:
@@ -378,7 +495,7 @@ class MultiHeadedAttention(nn.Module):
     # |
     # V
         q, k, v = self.forward_qkv(query, key, value, expand_kv)             
-        scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(self.d_k)  # --> LOCAL LINEAR LAYER!
+        scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(self.d_k)  # --> LOCAL MATMUL LAYER!
         
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         d1 = {"x_dim": q.dim(), "w_dim": k.transpose(-2, -1).dim()}
