@@ -187,8 +187,10 @@ class EBranchformerEncoderLayer(torch.nn.Module):
             x_sim_input = (x_concat + x_tmp).to(DEVICE)
             x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
         
+        print("sim output:"+ str(x_sim))
+        print("gt output:"+ str(x_lin))
         assert torch.allclose(x_lin.detach().cpu(), x_sim.detach().cpu(), atol=1e-5), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
-        
+        print("MERGE PROJ LAYER SIMULATION SUCCESSFUL!")
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
         if self.feed_forward is not None:
