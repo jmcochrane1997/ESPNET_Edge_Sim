@@ -20,6 +20,10 @@ try:
 except Exception as e:
     print(f"Failed to import Flash Attention, using ESPnet default: {e}")
 
+from espnet2.edgeSim.LinearLayerSim import LinearSim
+import numpy as np
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
+print(f"ATTENTION SOURCE CODE DEVICE: {DEVICE}")
 
 class MultiHeadedAttention(nn.Module):
     """Multi-Head Attention layer.
@@ -90,12 +94,24 @@ class MultiHeadedAttention(nn.Module):
 
         """
         n_batch = query.size(0)
-        q = self.linear_q(query).view(n_batch, -1, self.h, self.d_k) # --> LOCAL LINEAR LAYER!
+        q = self.linear_q(query).view(n_batch, -1, self.h, self.d_k).to(DEVICE) # --> LOCAL LINEAR LAYER!
         
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        d = {"x_dim": query.dim(), "w_dim": self.linear_q.weight.ndimension()}
-        print(d)
+        print("SIMULATING LINEAR_Q IN MHA...")
+        with torch.no_grad():
+            weight = self.linear_q.weight.data.to(DEVICE)
+            bias = self.linear_q.bias.data.to(DEVICE)
+            linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+            x_sim_input = query.to(DEVICE)
+            x_sim = linear_sim_layer(x_sim_input).view(n_batch, -1, self.h, self.d_k).to(DEVICE)
+        #print("sim output:"+ str(x_sim))
+        #print("gt output:"+ str(q))
+        max_diff = torch.max(torch.abs(q - x_sim)).item()
+        print(f"MAX DIFF: {max_diff}")
+        assert torch.allclose(q.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+        print("LINEAR_Q SIMULATION SUCCESSFUL!")
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 
         if expand_kv:
             k_shape = key.shape

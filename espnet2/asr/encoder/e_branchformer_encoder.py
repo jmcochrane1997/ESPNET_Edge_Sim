@@ -53,7 +53,6 @@ from espnet2.legacy.nets.pytorch_backend.transformer.subsampling import (
 
 from espnet2.edgeSim.LinearLayerSim import LinearSim
 import numpy as np
-
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
 print(f"ENCODER SOURCE CODE DEVICE: {DEVICE}")
 
@@ -187,7 +186,6 @@ class EBranchformerEncoderLayer(torch.nn.Module):
             linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
             x_sim_input = (x_concat + x_tmp).to(DEVICE)
             x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
-        
         print("sim output:"+ str(x_sim))
         print("gt output:"+ str(x_lin))
         max_diff = torch.max(torch.abs(x_lin - x_sim)).item()
