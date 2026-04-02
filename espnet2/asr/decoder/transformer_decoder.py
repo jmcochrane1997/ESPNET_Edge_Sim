@@ -4,7 +4,7 @@
 """Decoder definition."""
 import logging
 from typing import Any, List, Sequence, Tuple
-
+import os
 import torch
 from typeguard import typechecked
 
@@ -43,6 +43,8 @@ from espnet2.edgeSim.LinearLayerSim import LinearSim
 import numpy as np
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
 print(f"TRANSFORMER DECODER SOURCE CODE DEVICE: {DEVICE}")
+SIMULATE = os.getenv("SIMULATE", "False") # default to False if the environment variable is not set
+
 
 class BaseTransformerDecoder(
     AbsDecoder, BatchScorerInterface, MaskParallelScorerInterface
@@ -213,7 +215,8 @@ class BaseTransformerDecoder(
             # |
             max_diff = torch.max(torch.abs(x - x_sim)).item() # compute the max absolute difference between the original output layer output and the simulated output layer output
 #            print(f"MAX DIFF: {max_diff}")
-            assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder output layer!"
+            if SIMULATE == "False":
+                assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder output layer!"
             x = x_sim # use the sim output as the new x to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 

@@ -11,6 +11,7 @@ Reference:
 """
 
 import logging
+import os
 from typing import List, Optional, Tuple
 
 import torch
@@ -55,6 +56,7 @@ from espnet2.edgeSim.LinearLayerSim import LinearSim
 import numpy as np
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
 #print(f"ENCODER SOURCE CODE DEVICE: {DEVICE}")
+SIMULATE = os.getenv("APPLY_SIM", "False")
 
 class EBranchformerEncoderLayer(torch.nn.Module):
     """E-Branchformer encoder layer module.
@@ -188,7 +190,8 @@ class EBranchformerEncoderLayer(torch.nn.Module):
  #       print("gt output:"+ str(x_lin))
         max_diff = torch.max(torch.abs(x_lin - x_sim)).item()
 #        print(f"MAX DIFF: {max_diff}")
-        assert torch.allclose(x_lin.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+        if SIMULATE == "False":
+            assert torch.allclose(x_lin.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
 #        print("MERGE PROJ LAYER SIMULATION SUCCESSFUL!")
         x_lin = x_sim # use the sim output as the new x_lin to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

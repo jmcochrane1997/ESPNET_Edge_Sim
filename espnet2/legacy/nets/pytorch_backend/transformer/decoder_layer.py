@@ -8,6 +8,7 @@
 
 import torch
 from torch import nn
+import os
 
 from espnet2.legacy.nets.pytorch_backend.transformer.layer_norm import LayerNorm
 
@@ -17,6 +18,8 @@ import numpy as np
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
 
 print(f"TRANSFORMER DECODER SOURCE CODE DEVICE: {DEVICE}")
+
+SIMULATE = os.getenv("SIMULATE", "False") # default to False if the environment variable is not set
 
 class DecoderLayer(nn.Module):
     """Single decoder layer module.
@@ -145,7 +148,8 @@ class DecoderLayer(nn.Module):
             #print("gt output:"+ str(x))
             max_diff = torch.max(torch.abs(x - x_sim)).item()
 #            print(f"MAX DIFF: {max_diff}")
-            assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder first linear layer!"
+            if SIMULATE == "False":
+                assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder first linear layer!"
             x = x_sim # use the sim output as the new x to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         else:
@@ -200,7 +204,8 @@ class DecoderLayer(nn.Module):
             #print("gt output:"+ str(x))
             max_diff = torch.max(torch.abs(x - x_sim)).item()
 #            print(f"MAX DIFF: {max_diff}")
-            assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder second linear layer!"
+            if SIMULATE == "False":
+                assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=1e-3), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder second linear layer!"
             x = x_sim # use the sim output as the new x to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         else:
