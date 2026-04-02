@@ -5,6 +5,9 @@ import math
 from tqdm import tqdm
 torch.manual_seed(42)
 
+
+
+
 class LinearSim(nn.Module):
     def __init__(self, Weight, Bias, Error_Dist, show_batch_processing=False):
         super().__init__()
