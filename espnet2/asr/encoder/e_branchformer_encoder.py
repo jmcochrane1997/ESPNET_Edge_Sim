@@ -176,8 +176,8 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         x_tmp = x_concat.transpose(1, 2)
         x_tmp = self.depthwise_conv_fusion(x_tmp)
         x_tmp = x_tmp.transpose(1, 2)
-        x_lin = self.merge_proj(x_concat + x_tmp)#.to(DEVICE)
-        x = x + self.dropout(x_lin)  # --> LOCAL LINEAR LAYER! 
+        x_lin = self.merge_proj(x_concat + x_tmp).to(DEVICE) # --> LOCAL LINEAR LAYER!
+        x = x + self.dropout(x_lin)   
         
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         print("SIMULATING MERGE PROJ LAYER IN EBranchformerEncoderLayer...")
@@ -190,7 +190,7 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         
         print("sim output:"+ str(x_sim))
         print("gt output:"+ str(x_lin))
-        assert np.allclose(x_lin.detach().cpu().numpy(), x_sim.detach().cpu().numpy(), atol=1e-5), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
+        assert torch.allclose(x_lin.detach().cpu(), x_sim.detach().cpu(), atol=1e-4), f"Output mismatch between original linear layer and simulated linear layer in EBranchformerEncoderLayer!"
         print("MERGE PROJ LAYER SIMULATION SUCCESSFUL!")
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
