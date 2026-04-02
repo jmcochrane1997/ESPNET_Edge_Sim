@@ -176,8 +176,6 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         x_tmp = self.depthwise_conv_fusion(x_tmp)
         x_tmp = x_tmp.transpose(1, 2)
         x_lin = self.merge_proj(x_concat + x_tmp).to(DEVICE) # --> LOCAL LINEAR LAYER!
-        x = x + self.dropout(x_lin)   
-        
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
  #       print("SIMULATING MERGE PROJ LAYER IN EBranchformerEncoderLayer...")
         with torch.no_grad():
@@ -195,6 +193,8 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         x_lin = x_sim # use the sim output as the new x_lin to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+        x = x + self.dropout(x_lin)
+        
         if self.feed_forward is not None:
             # feed forward module
             residual = x
@@ -534,7 +534,7 @@ class EBranchformerEncoder(AbsEncoder):
             torch.Tensor: Not to be used now.
         """
         
-        print("BEGIN ENCODER LAYER!")
+        print("BEGIN ENCODER ...")
 
         if masks is None:
             masks = (~make_pad_mask(ilens)[:, None, :]).to(xs_pad.device)

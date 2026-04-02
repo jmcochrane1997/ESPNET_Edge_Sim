@@ -153,6 +153,9 @@ class BaseTransformerDecoder(
                 if use_output_layer is True,
             olens: (batch, )
         """
+        
+        print("BEGIN DECODER ...")
+        
         tgt = ys_in_pad
         # tgt_mask: (B, 1, L)
         tgt_mask = (~make_pad_mask(ys_in_lens)[:, None, :]).to(tgt.device)

@@ -4,8 +4,16 @@ import numpy as np
 import math
 from tqdm import tqdm
 torch.manual_seed(42)
+import os
 
 
+# load the simulation boolean as an environment variable
+SIMULATE = os.getenv("APPLY_SIM", "False")
+print(f"APPLY SIMULATION: {SIMULATE}")
+
+# load the standard deviation as an environment variable
+std_dev_env = float(os.getenv("STD_DEV", "0.01")) # default to 0.01 if not set
+print(f"USING STD DEV: {std_dev_env} FOR ERROR SAMPLING IN LINEAR SIMULATION")
 
 
 class LinearSim(nn.Module):
@@ -41,14 +49,14 @@ class LinearSim(nn.Module):
       Generate (gaussian) error samples
       '''
       mean = 0
-      std_dev = 0.01
+      std_dev = std_dev_env  #*** NOISE LEVEL FROM ENV VARIABLE !! ***
       normal_dist = torch.distributions.Normal(loc=mean, scale=std_dev)
       samples = normal_dist.sample((num_channels, num_rows, num_cols))
       return samples
       #assert self.Error_Dist.dim == 3, "error: expected a three-dimensional error distribution"
 
 
-    def Matmul_2D(self, X, W, diff_dist):
+    def Matmul_2D(self, X, W, diff_dist=None):
       '''
       Re-factors 2d Matrix multiplication using a sum over Hadamard Products.
       X: Tensor of shape (batch_size, in_features) = (m,n)
@@ -74,12 +82,24 @@ class LinearSim(nn.Module):
 
       X_times_W = torch.stack(Hs, dim=0) # stack the Hadamard Products along the channel dimension
       assert X_times_W.shape == (m, n, k)
-      X_times_W_Plus_Delta = X_times_W +  torch.zeros(m, n, k, device=X_times_W.device) #self.ErrorSample(diff_dist, num_channels=m, num_rows=n, num_cols=k).to(DEVICE)
-      x_times_W_Plus_Delta_Summed = torch.sum(X_times_W_Plus_Delta, dim=1).view(m,k)   # sum over the row dim and reshape to match the expected output shape
-      assert x_times_W_Plus_Delta_Summed.shape == (m, k)
-      return x_times_W_Plus_Delta_Summed
-
-    def Matmul(self, X, W, diff_dist):
+      
+      if SIMULATE=="True":
+        X_times_W_Plus_Delta = X_times_W + self.ErrorSample(num_channels=m, num_rows=n, num_cols=k).to(X_times_W.device) #torch.zeros(m, n, k, device=X_times_W.device) 
+        x_times_W_Plus_Delta_Summed = torch.sum(X_times_W_Plus_Delta, dim=1).view(m,k)   # sum over the row dim and reshape to match the expected output shape
+        assert x_times_W_Plus_Delta_Summed.shape == (m, k)
+        return x_times_W_Plus_Delta_Summed
+      
+      elif SIMULATE=="False":
+        X_times_W_Plus_Delta = X_times_W + torch.zeros(m, n, k, device=X_times_W.device) 
+        x_times_W_Plus_Delta_Summed = torch.sum(X_times_W_Plus_Delta, dim=1).view(m,k)   # sum over the row dim and reshape to match the expected output shape
+        assert x_times_W_Plus_Delta_Summed.shape == (m, k)
+        return x_times_W_Plus_Delta_Summed
+      
+      else:
+        raise Exception(f"Invalid value for SIMULATE: {SIMULATE}. Expected 'True' or 'False' as a string.")
+      
+      
+    def Matmul(self, X, W, diff_dist=None):
       '''
       Re-implements matrix/tensor multiplication over high-dimensional inputs
       X: Tensor - can be 2d, 3d, or 4d
