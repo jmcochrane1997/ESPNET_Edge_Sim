@@ -21,7 +21,7 @@ try:
 except Exception as e:
     print(f"Failed to import Flash Attention, using ESPnet default: {e}")
 
-from espnet2.edgeSim.LinearLayerSim import LinearSim
+from espnet2.edgeSim.LinearLayerSim import LinearSim, ScaledDotProdAttention
 import numpy as np
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" 
 #print(f"ATTENTION SOURCE CODE DEVICE: {DEVICE}")
@@ -237,10 +237,15 @@ class MultiHeadedAttention(nn.Module):
 
         p_attn = self.dropout(self.attn)
         x = torch.matmul(p_attn, value)  # (batch, head, time1, d_k)        # --> LOCAL MATMUL LAYER!
-        
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        d = {"x_dim": p_attn.dim(), "w_dim": value.dim()}
-        print(d)
+        matmul_sim = LinearSim(Weight=value.mT, Bias=None, Error_Dist=None)
+        x_sim_input = p_attn.to(DEVICE)
+        x_sim = matmul_sim(x_sim_input).to(DEVICE)
+        max_diff = torch.max(torch.abs(x - x_sim)).item()
+#        print(f"MAX DIFF: {max_diff}")
+        if SIMULATE == "False":
+            assert torch.allclose(x.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original matmul and simulated matmul in EBranchformerEncoderLayer! {max_diff}"
+        x = x_sim # use the sim output as the new x to ensure that the sim layer is actually running during inference
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
         x = (
@@ -303,12 +308,13 @@ class MultiHeadedAttention(nn.Module):
             )  # (batch, head, time1, d_k)
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-            d1 = {"x_dim": q.dim(), "w_dim": None}
-            print(d1)
-            d2 = {"x_dim": k.dim(), "w_dim": None}
-            print(d2)
-            d3 = {"x_dim": v.dim(), "w_dim": None}
-            print(d3)
+            attn_sim_layer = ScaledDotProdAttention(Error_Dist=None)
+            sim_output = attn_sim_layer(query=q, key=k, value=v, attn_mask=mask.unsqueeze(1) if mask is not None else None, dropout_p=self.dropout_rate if self.training else 0.0)
+            max_diff = torch.max(torch.abs(out - sim_output)).item()
+#            print(f"MAX DIFF: {max_diff}")
+            if SIMULATE == "False":
+                assert torch.allclose(out.detach().cpu(), sim_output.detach().cpu(), atol=THRESH), f"Output mismatch between original SDPA and simulated SDPA in EBranchformerEncoderLayer! {max_diff}"
+            out = sim_output # use the sim output as the new out to ensure that the sim layer is actually running during inference
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
             
             out = out.transpose(1, 2)  # (batch, time1, head, d_k)
@@ -428,7 +434,7 @@ class MultiHeadedAttention(nn.Module):
                     q = self.q_norm(q)
                     k = self.k_norm(k)
 
-                    out = flash_attn_varlen_func(
+                    out = flash_attn_varlen_func(  #*** THIS CLASS DOES NOT GET IMPORTED (SEE LINES 19-22), SO THIS BLOCK OF CODE IS NOT GETTING EXECUTED.
                         q,
                         k,
                         v,
@@ -439,6 +445,7 @@ class MultiHeadedAttention(nn.Module):
                         dropout_p=self.dropout_rate if self.training else 0.0,
                         causal=self.causal,
                     )  # (total, nheads, headdim)
+                    
                     
                     out = out.reshape(out.shape[0], -1)
                     
@@ -522,9 +529,15 @@ class MultiHeadedAttention(nn.Module):
         scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(self.d_k)  # --> LOCAL MATMUL LAYER!
         
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        d1 = {"x_dim": q.dim(), "w_dim": k.transpose(-2, -1).dim()}
-        print(d1)
-        # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        matmul_sim = LinearSim(Weight=k.transpose(-2, -1).mT, Bias=None, Error_Dist=None)
+        x_sim_input = q.to(DEVICE)
+        x_sim = matmul_sim(x_sim_input).to(DEVICE)
+        max_diff = torch.max(torch.abs(scores - x_sim)).item()
+#        print(f"MAX DIFF: {max_diff}")
+        if SIMULATE == "False":
+            assert torch.allclose(scores.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original matmul and simulated matmul in EBranchformerEncoderLayer! {max_diff}"
+        scores = x_sim # use the sim output as the new scores to ensure that the sim layer is actually running during inference
+        # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
         return self.forward_attention(v, scores, mask)                       
     #  Λ
