@@ -531,7 +531,7 @@ class MultiHeadedAttention(nn.Module):
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         matmul_sim = LinearSim(Weight=k.transpose(-2, -1).mT, Bias=None, Error_Dist=None)
         x_sim_input = q.to(DEVICE)
-        x_sim = matmul_sim(x_sim_input).to(DEVICE)
+        x_sim = matmul_sim(x_sim_input).to(DEVICE) / math.sqrt(self.d_k)
         max_diff = torch.max(torch.abs(scores - x_sim)).item()
 #        print(f"MAX DIFF: {max_diff}")
         if SIMULATE == "False":
