@@ -16,7 +16,7 @@ print(f"APPLY SIMULATION: {SIMULATE}")
 std_dev_env = float(os.getenv("STD_DEV", "0.01")) # default to 0.01 if not set
 print(f"USING STD DEV: {std_dev_env} FOR ERROR SAMPLING IN LINEAR SIMULATION")
 # create the error dist.
-mean = 0
+mean = -8.8e-4    # empirical dist. mean from current work
 std_dev = std_dev_env  #*** NOISE LEVEL FROM ENV VARIABLE !! ***
 #normal_dist = torch.distributions.Normal(loc=mean, scale=std_dev)
 THRESH = float(os.getenv("UNIT_TEST_THRESHOLD", "0.001")) # default to 0.0001 if not set
