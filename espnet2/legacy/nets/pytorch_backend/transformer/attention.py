@@ -105,6 +105,10 @@ class MultiHeadedAttention(nn.Module):
         with torch.no_grad():
             weight = self.linear_q.weight.data.to(DEVICE)
             bias = self.linear_q.bias.data.to(DEVICE)
+            
+            num_weights_simulated = weight.numel() + bias.numel()
+            print(num_weights_simulated)
+            
             linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
             x_sim_input = query.to(DEVICE)
             x_sim = linear_sim_layer(x_sim_input).view(n_batch, -1, self.h, self.d_k).to(DEVICE)
@@ -130,6 +134,10 @@ class MultiHeadedAttention(nn.Module):
             with torch.no_grad():
                 weight = self.linear_k.weight.data.to(DEVICE)
                 bias = self.linear_k.bias.data.to(DEVICE)
+                
+                num_weights_simulated = weight.numel() + bias.numel()
+                print(num_weights_simulated)
+                
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = key[:1, :, :].to(DEVICE)
                 x_sim = linear_sim_layer(x_sim_input).expand(n_batch, k_shape[1], k_shape[2]).view(n_batch, -1, self.h, self.d_k).to(DEVICE)
@@ -152,6 +160,10 @@ class MultiHeadedAttention(nn.Module):
             with torch.no_grad():
                 weight = self.linear_v.weight.data.to(DEVICE)
                 bias = self.linear_v.bias.data.to(DEVICE)
+                
+                num_weights_simulated = weight.numel() + bias.numel()
+                print(num_weights_simulated)
+                
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = value[:1, :, :].to(DEVICE)
                 x_sim = linear_sim_layer(x_sim_input).expand(n_batch, v_shape[1], v_shape[2]).view(n_batch, -1, self.h, self.d_k).to(DEVICE)
@@ -171,6 +183,10 @@ class MultiHeadedAttention(nn.Module):
             with torch.no_grad():
                 weight = self.linear_k.weight.data.to(DEVICE)
                 bias = self.linear_k.bias.data.to(DEVICE)
+                
+                num_weights_simulated = weight.numel() + bias.numel()
+                print(num_weights_simulated)
+                
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = key.to(DEVICE)
                 x_sim = linear_sim_layer(x_sim_input).view(n_batch, -1, self.h, self.d_k).to(DEVICE)
@@ -190,6 +206,10 @@ class MultiHeadedAttention(nn.Module):
             with torch.no_grad():
                 weight = self.linear_v.weight.data.to(DEVICE)
                 bias = self.linear_v.bias.data.to(DEVICE)
+                
+                num_weights_simulated = weight.numel() + bias.numel()
+                print(num_weights_simulated)
+                
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = value.to(DEVICE)
                 x_sim = linear_sim_layer(x_sim_input).view(n_batch, -1, self.h, self.d_k).to(DEVICE)
@@ -259,6 +279,10 @@ class MultiHeadedAttention(nn.Module):
         with torch.no_grad():
             weight = self.linear_out.weight.data.to(DEVICE)
             bias = self.linear_out.bias.data.to(DEVICE)
+            
+            num_weights_simulated = weight.numel() + bias.numel()
+            print(num_weights_simulated)
+            
             linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
             x_sim_input = x.to(DEVICE)
             x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
@@ -326,6 +350,10 @@ class MultiHeadedAttention(nn.Module):
             with torch.no_grad():
                 weight = self.linear_out.weight.data.to(DEVICE)
                 bias = self.linear_out.bias.data.to(DEVICE)
+                
+                num_weights_simulated = weight.numel() + bias.numel()
+                print(num_weights_simulated)
+                
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = out.to(DEVICE)
                 x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
@@ -370,6 +398,10 @@ class MultiHeadedAttention(nn.Module):
                     with torch.no_grad():
                         weight = self.linear_q.weight.data.to(DEVICE)
                         bias = self.linear_q.bias.data.to(DEVICE)
+                        
+                        num_weights_simulated = weight.numel() + bias.numel()
+                        print(num_weights_simulated)
+                        
                         linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                         x_sim_input = q.to(DEVICE) #use the old q as the sim input
                         x_sim = linear_sim_layer(x_sim_input).reshape(-1, self.h, self.d_k).to(DEVICE)
@@ -392,6 +424,10 @@ class MultiHeadedAttention(nn.Module):
                     with torch.no_grad():
                         weight = self.linear_k.weight.data.to(DEVICE)
                         bias = self.linear_k.bias.data.to(DEVICE)
+                        
+                        num_weights_simulated = weight.numel() + bias.numel()
+                        print(num_weights_simulated)
+                        
                         linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                         x_sim_input = k.to(DEVICE) #use the old k as the sim input
                         x_sim = linear_sim_layer(x_sim_input).reshape(-1, self.h, self.d_k).to(DEVICE)
@@ -414,6 +450,10 @@ class MultiHeadedAttention(nn.Module):
                     with torch.no_grad():
                         weight = self.linear_v.weight.data.to(DEVICE)
                         bias = self.linear_v.bias.data.to(DEVICE)
+                        
+                        num_weights_simulated = weight.numel() + bias.numel()
+                        print(num_weights_simulated)
+                        
                         linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                         x_sim_input = v.to(DEVICE) #use the old v as the sim input
                         x_sim = linear_sim_layer(x_sim_input).reshape(-1, self.h, self.d_k).to(DEVICE)
@@ -454,6 +494,10 @@ class MultiHeadedAttention(nn.Module):
                     with torch.no_grad():
                         weight = self.linear_out.weight.data.to(DEVICE)
                         bias = self.linear_out.bias.data.to(DEVICE)
+                        
+                        num_weights_simulated = weight.numel() + bias.numel()
+                        print(num_weights_simulated)
+                        
                         linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                         x_sim_input = out.to(DEVICE) #  use the old out as the sim input
                         x_sim = linear_sim_layer(x_sim_input).to(DEVICE)
@@ -496,6 +540,10 @@ class MultiHeadedAttention(nn.Module):
                     with torch.no_grad():
                         weight = self.linear_out.weight.data.to(DEVICE)
                         bias = self.linear_out.bias.data.to(DEVICE)
+                        
+                        num_weights_simulated = weight.numel() + bias.numel()
+                        print(num_weights_simulated)
+                        
                         linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                         x_sim_input = out.to(DEVICE) # use the old out as the sim input
                         x_sim = linear_sim_layer(x_sim_input).to(DEVICE)

@@ -180,7 +180,7 @@ class EBranchformerEncoderLayer(torch.nn.Module):
         x_tmp = x_tmp.transpose(1, 2)
         x_lin = self.merge_proj(x_concat + x_tmp).to(DEVICE) # --> LOCAL LINEAR LAYER!
         # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        print("MERGE PROJ LAYER IN EBranchformerEncoderLayer NOT SIMULATED! ...")
+ #       print("MERGE PROJ LAYER IN EBranchformerEncoderLayer NOT SIMULATED! ...")
  #       with torch.no_grad():
  #           weight = self.merge_proj.weight.data.to(DEVICE)
  #           bias = self.merge_proj.bias.data.to(DEVICE)
@@ -538,7 +538,7 @@ class EBranchformerEncoder(AbsEncoder):
             torch.Tensor: Not to be used now.
         """
         
-        print("BEGIN ENCODER ...")
+#        print("BEGIN ENCODER ...")
 
         if masks is None:
             masks = (~make_pad_mask(ilens)[:, None, :]).to(xs_pad.device)

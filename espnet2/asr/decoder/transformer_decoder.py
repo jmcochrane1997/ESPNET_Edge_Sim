@@ -156,7 +156,7 @@ class BaseTransformerDecoder(
             olens: (batch, )
         """
         
-        print("BEGIN DECODER ...")
+    #    print("BEGIN DECODER ...")
         
         tgt = ys_in_pad
         # tgt_mask: (B, 1, L)
@@ -203,6 +203,10 @@ class BaseTransformerDecoder(
             with torch.no_grad():
                 weight = self.output_layer.weight.data.to(DEVICE)
                 bias = self.output_layer.bias.data.to(DEVICE)
+                
+                num_weights_simulated = weight.numel() + bias.numel()
+                print(num_weights_simulated)
+                
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = x.to(DEVICE) # use the old x as the sim input
                 x_sim = linear_sim_layer(x_sim_input).to(DEVICE)

@@ -142,6 +142,10 @@ class DecoderLayer(nn.Module):
             with torch.no_grad():
                 weight = self.concat_linear1.weight.data.to(DEVICE)
                 bias = self.concat_linear1.bias.data.to(DEVICE)
+                
+                num_weights_simulated = weight.numel() + bias.numel()
+                print(num_weights_simulated)
+                
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = tgt_concat.to(DEVICE) # use the old tgt_concat as the sim input
                 x_sim = linear_sim_layer(x_sim_input).to(DEVICE) + residual.to(DEVICE) # don't forget to add the residual after the linear layer!
@@ -198,6 +202,10 @@ class DecoderLayer(nn.Module):
             with torch.no_grad():
                 weight = self.concat_linear2.weight.data.to(DEVICE)
                 bias = self.concat_linear2.bias.data.to(DEVICE)
+                
+                num_weights_simulated = weight.numel() + bias.numel()
+                print(num_weights_simulated)
+                
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = x_concat.to(DEVICE) # use the old x_concat as the sim input
                 x_sim = linear_sim_layer(x_sim_input).to(DEVICE) + residual.to(DEVICE) # don't forget to add the residual after the linear layer!
