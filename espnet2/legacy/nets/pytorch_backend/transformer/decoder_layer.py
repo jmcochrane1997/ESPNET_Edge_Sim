@@ -110,7 +110,7 @@ class DecoderLayer(nn.Module):
 
         """
         
-        print("BEGIN DECODER LAYER...")
+    #    print("BEGIN DECODER LAYER...")
         residual = tgt
         if self.normalize_before:
             tgt = self.norm1(tgt)
@@ -143,8 +143,8 @@ class DecoderLayer(nn.Module):
                 weight = self.concat_linear1.weight.data.to(DEVICE)
                 bias = self.concat_linear1.bias.data.to(DEVICE)
                 
-                num_weights_simulated = weight.numel() + bias.numel()
-                print(num_weights_simulated)
+#                num_weights_simulated = weight.numel() + bias.numel()
+#                print(num_weights_simulated)
                 
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = tgt_concat.to(DEVICE) # use the old tgt_concat as the sim input
@@ -203,8 +203,8 @@ class DecoderLayer(nn.Module):
                 weight = self.concat_linear2.weight.data.to(DEVICE)
                 bias = self.concat_linear2.bias.data.to(DEVICE)
                 
-                num_weights_simulated = weight.numel() + bias.numel()
-                print(num_weights_simulated)
+#                num_weights_simulated = weight.numel() + bias.numel()
+#                print(num_weights_simulated)
                 
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = x_concat.to(DEVICE) # use the old x_concat as the sim input

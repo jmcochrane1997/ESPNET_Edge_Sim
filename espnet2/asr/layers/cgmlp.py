@@ -83,8 +83,8 @@ class ConvolutionalSpatialGatingUnit(torch.nn.Module):
                 weight = self.linear.weight.data.to(DEVICE)
                 bias = self.linear.bias.data.to(DEVICE)
                 
-                num_weights_simulated = weight.numel() + bias.numel()
-                print(num_weights_simulated)
+#                num_weights_simulated = weight.numel() + bias.numel()
+#                print(num_weights_simulated)
                 
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = x_g.to(DEVICE) # use the old x_g as the sim input#                
@@ -152,8 +152,8 @@ class ConvolutionalGatingMLP(torch.nn.Module):
             weight = self.channel_proj1[0].weight.data.to(DEVICE)
             bias = self.channel_proj1[0].bias.data.to(DEVICE)
             
-            num_weights_simulated = weight.numel() + bias.numel()
-            print(num_weights_simulated)
+#            num_weights_simulated = weight.numel() + bias.numel()
+#            print(num_weights_simulated)
             
             linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
             x_sim_input = xs_pad.to(DEVICE) # use the old xs_pad as the sim input
@@ -180,8 +180,8 @@ class ConvolutionalGatingMLP(torch.nn.Module):
             weight = self.channel_proj2.weight.data.to(DEVICE)
             bias = self.channel_proj2.bias.data.to(DEVICE)
             
-            num_weights_simulated = weight.numel() + bias.numel()
-            print(num_weights_simulated)
+#            num_weights_simulated = weight.numel() + bias.numel()
+#            print(num_weights_simulated)
             
             linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
             x_sim_input = xs_pad.to(DEVICE) # use the old xs_pad as the sim input

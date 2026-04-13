@@ -156,7 +156,7 @@ class BaseTransformerDecoder(
             olens: (batch, )
         """
         
-    #    print("BEGIN DECODER ...")
+        print("BEGIN DECODER ...")
         
         tgt = ys_in_pad
         # tgt_mask: (B, 1, L)
@@ -179,7 +179,12 @@ class BaseTransformerDecoder(
 
         x = self.embed(tgt)
         intermediate_outs = []
+        
+        print("NUM DECODER LAYERS: " + str(len(self.decoders)))
         for layer_idx, decoder_layer in enumerate(self.decoders):
+            
+            print(f"DECODER LAYER {layer_idx} ...")
+            
             if layer_idx + 1 in self.gradient_checkpoint_layers:
                 x, tgt_mask, memory, memory_mask = torch.utils.checkpoint.checkpoint(
                     decoder_layer, x, tgt_mask, memory, memory_mask, use_reentrant=False
@@ -204,8 +209,8 @@ class BaseTransformerDecoder(
                 weight = self.output_layer.weight.data.to(DEVICE)
                 bias = self.output_layer.bias.data.to(DEVICE)
                 
-                num_weights_simulated = weight.numel() + bias.numel()
-                print(num_weights_simulated)
+#                num_weights_simulated = weight.numel() + bias.numel()
+#                print(num_weights_simulated)
                 
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = x.to(DEVICE) # use the old x as the sim input
