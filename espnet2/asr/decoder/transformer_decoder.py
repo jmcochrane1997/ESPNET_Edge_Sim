@@ -48,6 +48,7 @@ THRESH = float(os.getenv("UNIT_TEST_THRESHOLD", "0.001")) # default to 0.0001 if
 EOS_IDX = int(os.environ.get("EOS_IDX"))
 assert EOS_IDX is not None, "EOS_IDX environment variable must be set to the index of the <eos> token in the vocabulary."
 assert type(EOS_IDX) == int, "EOS_IDX environment variable must be an integer representing the index of the <eos> token in the vocabulary."
+print(f"EOS_IDX: {EOS_IDX}")
 
 class BaseTransformerDecoder(
     AbsDecoder, BatchScorerInterface, MaskParallelScorerInterface
@@ -260,12 +261,8 @@ class BaseTransformerDecoder(
             y.shape` is (batch, maxlen_out, token)
         """
         
-        if (tgt == EOS_IDX).all():
-            print("!!!!<EOS> REACHED! DECODER SHOULD TERMINATE INFERENCE.")
-            
         print("--> DECODER STEP")
-        print(tgt)
-        
+       
         x = self.embed(tgt)
         if cache is None:
             cache = [None] * len(self.decoders)
@@ -311,6 +308,13 @@ class BaseTransformerDecoder(
             # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
             
 
+
+        # check if the next token = <eos>
+        next_tokens = torch.argmax(y, dim=-1)[:, -1] # get the predicted next token ids (last time step)
+        if (next_tokens == EOS_IDX).all():
+            print("!!!  All predicted next tokens are <eos>. Decoding should stop after this step.")
+            
+        
         if return_hs:
             return (y, hidden), new_cache
         return y, new_cache
