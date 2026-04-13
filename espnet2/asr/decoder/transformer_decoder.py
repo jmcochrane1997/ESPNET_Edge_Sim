@@ -261,9 +261,10 @@ class BaseTransformerDecoder(
         """
         
         if (tgt == EOS_IDX).all():
-            print("<EOS> REACHED! DECODER SHOULD TERMINATE INFERENCE.")
+            print("!!!!<EOS> REACHED! DECODER SHOULD TERMINATE INFERENCE.")
             
         print("--> DECODER STEP")
+        print(tgt)
         
         x = self.embed(tgt)
         if cache is None:
