@@ -310,7 +310,8 @@ class BaseTransformerDecoder(
 
 
         # check if the next token = <eos>
-        next_tokens = torch.argmax(y, dim=-1)[:, -1] # get the predicted next token ids (last time step)
+        print("--*> Y shape: " + str(y.shape))
+        next_tokens = y.argmax(dim=-1)[:, -1] # get the predicted next token ids (last time step)
         if (next_tokens == EOS_IDX).all():
             print("!!!  All predicted next tokens are <eos>. Decoding should stop after this step.")
             
