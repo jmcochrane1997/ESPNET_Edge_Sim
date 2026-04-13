@@ -155,9 +155,7 @@ class BaseTransformerDecoder(
                 if use_output_layer is True,
             olens: (batch, )
         """
-        
-        print("BEGIN DECODER ...")
-        
+        raise NotImplementedError("forward() is not implemented in the Decoder for simulation. Use forward_one_step() instead.")
         tgt = ys_in_pad
         # tgt_mask: (B, 1, L)
         tgt_mask = (~make_pad_mask(ys_in_lens)[:, None, :]).to(tgt.device)
@@ -180,21 +178,17 @@ class BaseTransformerDecoder(
         x = self.embed(tgt)
         intermediate_outs = []
         
-        print("NUM DECODER LAYERS: " + str(len(self.decoders)))
         for layer_idx, decoder_layer in enumerate(self.decoders):
-            
-            print(f"DECODER LAYER {layer_idx} ...")
             
             if layer_idx + 1 in self.gradient_checkpoint_layers:
                 x, tgt_mask, memory, memory_mask = torch.utils.checkpoint.checkpoint(
                     decoder_layer, x, tgt_mask, memory, memory_mask, use_reentrant=False
                 )
             else:
-                # //////////////////MAIN INFERENCE//////////////////////////////////////
+                
                 x, tgt_mask, memory, memory_mask = decoder_layer(
                     x, tgt_mask, memory, memory_mask
                 )
-                # ///////////////////////////////////////////////////////////////////////
             if return_all_hs:
                 intermediate_outs.append(x)
         if self.normalize_before:
@@ -263,18 +257,21 @@ class BaseTransformerDecoder(
             y.shape` is (batch, maxlen_out, token)
         """
         
-        print("BEGIN ONE STEP FORWARD ...")
+        print("BEGIN DECODER ...")
         
         x = self.embed(tgt)
         if cache is None:
             cache = [None] * len(self.decoders)
         new_cache = []
+        
+        # //////////////////MAIN INFERENCE//////////////////////////////////////////////////////////////////////////////
         for c, decoder in zip(cache, self.decoders):
             x, tgt_mask, memory, memory_mask = decoder(
                 x, tgt_mask, memory, memory_mask, cache=c
             )
             new_cache.append(x)
-
+        # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        
         if self.normalize_before:
             y = self.after_norm(x[:, -1])
         else:
@@ -282,7 +279,30 @@ class BaseTransformerDecoder(
         if return_hs:
             hidden = y
         if self.output_layer is not None:
+            
+            # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+            with torch.no_grad():
+                print("SIMULATING OUTPUT LAYER IN TRANSFORMER DECODER ONE STEP...")
+                weight = self.output_layer.weight.data.to(DEVICE)
+                bias = self.output_layer.bias.data.to(DEVICE)
+                linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
+                x_sim_input = y.to(DEVICE) # use the old y as the sim input
+                x_sim_linear = linear_sim_layer(x_sim_input).to(DEVICE)
+                x_sim = torch.log_softmax(x_sim_linear, dim=-1).to(DEVICE)
+            # |
+            # V
+            
             y = torch.log_softmax(self.output_layer(y), dim=-1)
+            
+            # Ʌ
+            # |
+            max_diff = torch.max(torch.abs(y - x_sim)).item() # compute the max absolute difference between the original output layer output and the simulated output layer output
+#            print(f"MAX DIFF: {max_diff}")
+            if SIMULATE == "False":
+                assert torch.allclose(y.detach().cpu(), x_sim.detach().cpu(), atol=THRESH), f"Output mismatch between original linear layer and simulated linear layer in TransformerDecoder output layer: {max_diff}"
+            y = x_sim # use the sim output as the new y to ensure that the sim layer is actually running during inference
+            # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+            
 
         if return_hs:
             return (y, hidden), new_cache
