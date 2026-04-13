@@ -45,8 +45,9 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"TRANSFORMER DECODER SOURCE CODE DEVICE: {DEVICE}")
 SIMULATE = os.getenv("APPLY_SIM", "False") # default to False if the environment variable is not set
 THRESH = float(os.getenv("UNIT_TEST_THRESHOLD", "0.001")) # default to 0.0001 if not set
-#TOKEN_LIST = os.environ.get("TOKEN_LIST")[1:-1].replace('\'','').replace(' ','').split(',') 
-
+EOS_IDX = int(os.environ.get("EOS_IDX"))
+assert EOS_IDX is not None, "EOS_IDX environment variable must be set to the index of the <eos> token in the vocabulary."
+assert type(EOS_IDX) == int, "EOS_IDX environment variable must be an integer representing the index of the <eos> token in the vocabulary."
 
 class BaseTransformerDecoder(
     AbsDecoder, BatchScorerInterface, MaskParallelScorerInterface
@@ -259,7 +260,7 @@ class BaseTransformerDecoder(
             y.shape` is (batch, maxlen_out, token)
         """
         
-        if (tgt == TOKEN_LIST.index('<eos>')).all():
+        if (tgt == EOS_IDX).all():
             print("<EOS> REACHED! DECODER SHOULD TERMINATE INFERENCE.")
             
         print("--> DECODER STEP")
