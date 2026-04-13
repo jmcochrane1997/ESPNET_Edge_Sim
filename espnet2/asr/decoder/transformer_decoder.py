@@ -45,6 +45,8 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"TRANSFORMER DECODER SOURCE CODE DEVICE: {DEVICE}")
 SIMULATE = os.getenv("APPLY_SIM", "False") # default to False if the environment variable is not set
 THRESH = float(os.getenv("UNIT_TEST_THRESHOLD", "0.001")) # default to 0.0001 if not set
+TOKEN_LIST = os.environ.get("TOKEN_LIST")[1:-1].replace('\'','').replace(' ','').split(',')
+
 
 class BaseTransformerDecoder(
     AbsDecoder, BatchScorerInterface, MaskParallelScorerInterface
@@ -257,7 +259,10 @@ class BaseTransformerDecoder(
             y.shape` is (batch, maxlen_out, token)
         """
         
-        print("BEGIN DECODER ...")
+        if (tgt == TOKEN_LIST.index('<eos>')).all():
+            print("<EOS> REACHED! DECODER SHOULD TERMINATE INFERENCE.")
+            
+        print("--> DECODER STEP")
         
         x = self.embed(tgt)
         if cache is None:
@@ -282,7 +287,7 @@ class BaseTransformerDecoder(
             
             # @@@@@@@@@@@@@@@@@@ EDGE SIM @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
             with torch.no_grad():
-                print("SIMULATING OUTPUT LAYER IN TRANSFORMER DECODER ONE STEP...")
+#                print("SIMULATING OUTPUT LAYER IN TRANSFORMER DECODER ONE STEP...")
                 weight = self.output_layer.weight.data.to(DEVICE)
                 bias = self.output_layer.bias.data.to(DEVICE)
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
