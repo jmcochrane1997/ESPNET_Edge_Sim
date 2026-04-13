@@ -538,7 +538,7 @@ class EBranchformerEncoder(AbsEncoder):
             torch.Tensor: Not to be used now.
         """
         
-        print("BEGIN ENCODER ...")
+#        print("BEGIN ENCODER ...")
 
         if masks is None:
             masks = (~make_pad_mask(ilens)[:, None, :]).to(xs_pad.device)

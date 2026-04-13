@@ -262,6 +262,9 @@ class BaseTransformerDecoder(
             y, cache: NN output value and cache per `self.decoders`.
             y.shape` is (batch, maxlen_out, token)
         """
+        
+        print("BEGIN ONE STEP FORWARD ...")
+        
         x = self.embed(tgt)
         if cache is None:
             cache = [None] * len(self.decoders)
@@ -380,6 +383,10 @@ class BaseTransformerDecoder(
             y, cache: NN output value and cache per `self.decoders`.
             y.shape` is (batch, maxlen_out, token)
         """
+        
+        print("BEGIN PARTIALLY AR FORWARD ...")
+        
+        
         x = self.embed(tgt)  # (n_mask * n_beam, maxlen_out, D)
         new_cache = []
         if cache is None:
