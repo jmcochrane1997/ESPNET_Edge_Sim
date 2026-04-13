@@ -45,7 +45,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"TRANSFORMER DECODER SOURCE CODE DEVICE: {DEVICE}")
 SIMULATE = os.getenv("APPLY_SIM", "False") # default to False if the environment variable is not set
 THRESH = float(os.getenv("UNIT_TEST_THRESHOLD", "0.001")) # default to 0.0001 if not set
-TOKEN_LIST = os.environ.get("TOKEN_LIST")[1:-1].replace('\'','').replace(' ','').split(',')
+#TOKEN_LIST = os.environ.get("TOKEN_LIST")[1:-1].replace('\'','').replace(' ','').split(',') 
 
 
 class BaseTransformerDecoder(
