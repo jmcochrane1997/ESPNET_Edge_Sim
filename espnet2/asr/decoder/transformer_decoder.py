@@ -234,6 +234,18 @@ class BaseTransformerDecoder(
             return (x, intermediate_outs), olens
         return x, olens
 
+    def init_decoder_step_counter(self):
+        '''
+        Reset the decoder step counter to 0 at the beginning of each new decoding process. This is important for the edge simulation to keep track of how many decoding steps have been taken and to ensure that the simulation runs for the correct number of steps.
+        '''
+        self.decoder_step_counter = 0
+    
+    def step_decoder_step_counter(self):
+        '''
+        Increment the decoder step counter by 1 at each decoding step. This is important for the edge simulation to keep track of how many decoding steps have been taken and to ensure that the simulation runs for the correct number of steps.
+        '''
+        self.decoder_step_counter += 1
+
     def forward_one_step(
         self,
         tgt: torch.Tensor,
@@ -260,8 +272,15 @@ class BaseTransformerDecoder(
             y, cache: NN output value and cache per `self.decoders`.
             y.shape` is (batch, maxlen_out, token)
         """
+        print()
+        print("NUM DECODER STEPS TAKEN SO FAR: " + str(self.decoder_step_counter))
+        # first, we need to get the number of tokens in the ground truth text to cap the total number of decoder steps. 
+        # This is done by extracting the dynamic environmental variable. 
+        decoder_eps = 5
+        max_decoding_steps = int(os.environ.get("MAX_DECODING_STEPS", 468)) + decoder_eps # the default is the global max text legnth of the gt text.
+        print(f"MAX DECODING STEPS ALLOWED: {max_decoding_steps}")
         
-        print("--> DECODER STEP")
+        print("--> TAKING A DECODER STEP")
        
         x = self.embed(tgt)
         if cache is None:
@@ -309,11 +328,19 @@ class BaseTransformerDecoder(
             
 
 
-        # check if the next token = <eos>
-        print("--*> Y shape: " + str(y.shape))  # shape(Y) = (batch, vocab_size) --> shape(argmax(Y)) = (batch,) where each element is the predicted next token id for that batch item
+        # *** INCREMENT THE DECODER STEP COUNTER AFTER TAKING A DECODER STEP ****
+        self.step_decoder_step_counter()
+        
+        # **** IF ALL THE PREDICTED NEXT TOKENS ARE <eos> OR MAX_DECODER_STEPS HAS BEEN REACHED, RESET THE DECODER STEP COUNTER TO 0 FOR THE NEXT DECODING PROCESS ****
         next_tokens = y.argmax(dim=-1) # get the predicted next token ids (last time step)
-        if (next_tokens == EOS_IDX).all():
-            print("!!!  All predicted next tokens are <eos>. Decoding should stop after this step.")
+        if (next_tokens == EOS_IDX).all() or self.decoder_step_counter >= max_decoding_steps: # if all the predicted next tokens are <eos> or if the max decoding steps has been reached, then reset the decoder step counter to 0 for the next decoding process
+            #  *** RESET THE DECODER STEP COUNTER WHEN DECODING ENDS ****
+            self.init_decoder_step_counter()
+            if (next_tokens == EOS_IDX).all():
+                print("!!!! DECODER REACHED EOS TOKEN! RESETTING DECODER STEP COUNTER FOR NEXT DECODING PROCESS !!!!")
+            if self.decoder_step_counter >= max_decoding_steps:
+                print("!!!! MAX DECODER STEPS REACHED! RESETTING DECODER STEP COUNTER FOR NEXT DECODING PROCESS !!!!")
+            assert self.decoder_step_counter == 0, "Decoder step counter should be reset to 0 after decoding is finished."
             
         
         if return_hs:
@@ -511,6 +538,9 @@ class TransformerDecoder(BaseTransformerDecoder):
             normalize_before=normalize_before,
             gradient_checkpoint_layers=gradient_checkpoint_layers,
         )
+        
+        # **** INITIALIZE THE DECCODER STEP COUNTER TO 0 ****
+        self.decoder_step_counter = 0
 
         if use_flash_attn:
             try:
