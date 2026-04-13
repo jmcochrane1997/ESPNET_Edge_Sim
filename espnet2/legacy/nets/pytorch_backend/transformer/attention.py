@@ -106,14 +106,14 @@ class MultiHeadedAttention(nn.Module):
             weight = self.linear_q.weight.data.to(DEVICE)
             bias = self.linear_q.bias.data.to(DEVICE)
             
-            num_weights_simulated = weight.numel() + bias.numel()
-            print(num_weights_simulated)
+#            num_weights_simulated = weight.numel() + bias.numel()
+#            print(num_weights_simulated)
             
             linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
             x_sim_input = query.to(DEVICE)
             x_sim = linear_sim_layer(x_sim_input).view(n_batch, -1, self.h, self.d_k).to(DEVICE)
         #print("sim output:"+ str(x_sim))
-        #print("gt output:"+ str(q))
+        #print("gt output:"+ str(q
         max_diff = torch.max(torch.abs(q - x_sim)).item()
 #        print(f"MAX DIFF: {max_diff}")
         if SIMULATE == "False":
@@ -135,8 +135,8 @@ class MultiHeadedAttention(nn.Module):
                 weight = self.linear_k.weight.data.to(DEVICE)
                 bias = self.linear_k.bias.data.to(DEVICE)
                 
-                num_weights_simulated = weight.numel() + bias.numel()
-                print(num_weights_simulated)
+ #               num_weights_simulated = weight.numel() + bias.numel()
+ #               print(num_weights_simulated)
                 
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = key[:1, :, :].to(DEVICE)
@@ -161,8 +161,8 @@ class MultiHeadedAttention(nn.Module):
                 weight = self.linear_v.weight.data.to(DEVICE)
                 bias = self.linear_v.bias.data.to(DEVICE)
                 
-                num_weights_simulated = weight.numel() + bias.numel()
-                print(num_weights_simulated)
+ #               num_weights_simulated = weight.numel() + bias.numel()
+ #               print(num_weights_simulated)
                 
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = value[:1, :, :].to(DEVICE)
@@ -184,8 +184,8 @@ class MultiHeadedAttention(nn.Module):
                 weight = self.linear_k.weight.data.to(DEVICE)
                 bias = self.linear_k.bias.data.to(DEVICE)
                 
-                num_weights_simulated = weight.numel() + bias.numel()
-                print(num_weights_simulated)
+ #               num_weights_simulated = weight.numel() + bias.numel()
+ #               print(num_weights_simulated)
                 
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = key.to(DEVICE)
@@ -207,8 +207,8 @@ class MultiHeadedAttention(nn.Module):
                 weight = self.linear_v.weight.data.to(DEVICE)
                 bias = self.linear_v.bias.data.to(DEVICE)
                 
-                num_weights_simulated = weight.numel() + bias.numel()
-                print(num_weights_simulated)
+ #               num_weights_simulated = weight.numel() + bias.numel()
+ #               print(num_weights_simulated)
                 
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = value.to(DEVICE)
@@ -280,8 +280,8 @@ class MultiHeadedAttention(nn.Module):
             weight = self.linear_out.weight.data.to(DEVICE)
             bias = self.linear_out.bias.data.to(DEVICE)
             
-            num_weights_simulated = weight.numel() + bias.numel()
-            print(num_weights_simulated)
+#            num_weights_simulated = weight.numel() + bias.numel()
+#            print(num_weights_simulated)
             
             linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
             x_sim_input = x.to(DEVICE)
@@ -351,8 +351,8 @@ class MultiHeadedAttention(nn.Module):
                 weight = self.linear_out.weight.data.to(DEVICE)
                 bias = self.linear_out.bias.data.to(DEVICE)
                 
-                num_weights_simulated = weight.numel() + bias.numel()
-                print(num_weights_simulated)
+#                num_weights_simulated = weight.numel() + bias.numel()
+#                print(num_weights_simulated)
                 
                 linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                 x_sim_input = out.to(DEVICE)
@@ -399,8 +399,8 @@ class MultiHeadedAttention(nn.Module):
                         weight = self.linear_q.weight.data.to(DEVICE)
                         bias = self.linear_q.bias.data.to(DEVICE)
                         
-                        num_weights_simulated = weight.numel() + bias.numel()
-                        print(num_weights_simulated)
+       #                 num_weights_simulated = weight.numel() + bias.numel()
+       #                 print(num_weights_simulated)
                         
                         linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                         x_sim_input = q.to(DEVICE) #use the old q as the sim input
@@ -425,8 +425,8 @@ class MultiHeadedAttention(nn.Module):
                         weight = self.linear_k.weight.data.to(DEVICE)
                         bias = self.linear_k.bias.data.to(DEVICE)
                         
-                        num_weights_simulated = weight.numel() + bias.numel()
-                        print(num_weights_simulated)
+    #                    num_weights_simulated = weight.numel() + bias.numel()
+    #                    print(num_weights_simulated)
                         
                         linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                         x_sim_input = k.to(DEVICE) #use the old k as the sim input
@@ -451,8 +451,8 @@ class MultiHeadedAttention(nn.Module):
                         weight = self.linear_v.weight.data.to(DEVICE)
                         bias = self.linear_v.bias.data.to(DEVICE)
                         
-                        num_weights_simulated = weight.numel() + bias.numel()
-                        print(num_weights_simulated)
+   #                     num_weights_simulated = weight.numel() + bias.numel()
+   #                     print(num_weights_simulated)
                         
                         linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                         x_sim_input = v.to(DEVICE) #use the old v as the sim input
@@ -495,8 +495,8 @@ class MultiHeadedAttention(nn.Module):
                         weight = self.linear_out.weight.data.to(DEVICE)
                         bias = self.linear_out.bias.data.to(DEVICE)
                         
-                        num_weights_simulated = weight.numel() + bias.numel()
-                        print(num_weights_simulated)
+   #                     num_weights_simulated = weight.numel() + bias.numel()
+   #                     print(num_weights_simulated)
                         
                         linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                         x_sim_input = out.to(DEVICE) #  use the old out as the sim input
@@ -541,8 +541,8 @@ class MultiHeadedAttention(nn.Module):
                         weight = self.linear_out.weight.data.to(DEVICE)
                         bias = self.linear_out.bias.data.to(DEVICE)
                         
-                        num_weights_simulated = weight.numel() + bias.numel()
-                        print(num_weights_simulated)
+   #                     num_weights_simulated = weight.numel() + bias.numel()
+   #                     print(num_weights_simulated)
                         
                         linear_sim_layer = LinearSim(Weight=weight, Bias=bias, Error_Dist=None, show_batch_processing=True)
                         x_sim_input = out.to(DEVICE) # use the old out as the sim input
