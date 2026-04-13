@@ -110,7 +110,7 @@ class DecoderLayer(nn.Module):
 
         """
         
- #       print("BEGIN DECODER LAYER...")
+        print("BEGIN DECODER LAYER...")
         residual = tgt
         if self.normalize_before:
             tgt = self.norm1(tgt)
