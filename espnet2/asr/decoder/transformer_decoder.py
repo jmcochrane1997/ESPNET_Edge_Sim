@@ -337,7 +337,8 @@ class BaseTransformerDecoder(
         # *** IF THE MAX DECODER STEPS HAVE BEEN REACHED, WE MUST FORCE THE NEXT TOKEN TO BE <EOS> AS THIS WILL FORCE THE DECODING TO END.
         if self.decoder_step_counter >= max_decoding_steps:
             print("!!!! MAX DECODER STEPS REACHED BUT NOT ALL PREDICTED TOKENS ARE <EOS>! FORCING NEXT TOKENS TO BE <EOS> TO END DECODING PROCESS !!!!")
-            y = torch.full_like(y, fill_value=EOS_IDX) # force the next token predictions to be <eos> to end the decoding process
+            y = torch.zeros_like(y)
+            y[:, EOS_IDX] = 1.0 # set the <EOS> token index to have the highest logit value to ensure it is selected as the predicted next token
             print(y)
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             self.init_decoder_step_counter()
