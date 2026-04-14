@@ -347,6 +347,8 @@ class BaseTransformerDecoder(
         elif (next_tokens == EOS_IDX).all(): # if all the predicted next tokens are <eos> or if the max decoding steps has been reached, then reset the decoder step counter to 0 for the next decoding process
             # *** RESET THE DECODER STEP COUNTER WHEN DECODING ENDS ****
             print("!!!! DECODER REACHED EOS TOKEN! RESETTING DECODER STEP COUNTER FOR NEXT DECODING PROCESS !!!!")
+            print(y)
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             self.init_decoder_step_counter()
             assert self.decoder_step_counter == 0, "Decoder step counter should be reset to 0 after decoding is finished."
             
