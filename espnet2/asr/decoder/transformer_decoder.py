@@ -272,15 +272,15 @@ class BaseTransformerDecoder(
             y, cache: NN output value and cache per `self.decoders`.
             y.shape` is (batch, maxlen_out, token)
         """
-        print()
-        print("NUM DECODER STEPS TAKEN SO FAR: " + str(self.decoder_step_counter))
+#        print()
+#        print("NUM DECODER STEPS TAKEN SO FAR: " + str(self.decoder_step_counter))
         # first, we need to get the number of tokens in the ground truth text to cap the total number of decoder steps. 
         # This is done by extracting the dynamic environmental variable. 
         decoder_eps = 5
         max_decoding_steps = int(os.environ.get("MAX_DECODING_STEPS", 468)) + decoder_eps # the default is the global max text legnth of the gt text.
-        print(f"MAX DECODING STEPS ALLOWED: {max_decoding_steps}")
+#        print(f"MAX DECODING STEPS ALLOWED: {max_decoding_steps}")
         
-        print("--> TAKING A DECODER STEP")
+#        print("--> TAKING A DECODER STEP")
        
         x = self.embed(tgt)
         if cache is None:
@@ -332,15 +332,15 @@ class BaseTransformerDecoder(
         self.step_decoder_step_counter()
         
         next_tokens = y.argmax(dim=-1)
-        print(f"Predicted next tokens: {next_tokens}")
+#        print(f"Predicted next tokens: {next_tokens}")
         
         # *** IF THE MAX DECODER STEPS HAVE BEEN REACHED, WE MUST FORCE THE NEXT TOKEN TO BE <EOS> AS THIS WILL FORCE THE DECODING TO END.
         if self.decoder_step_counter >= max_decoding_steps:
-            print("!!!! MAX DECODER STEPS REACHED BUT NOT ALL PREDICTED TOKENS ARE <EOS>! FORCING NEXT TOKENS TO BE <EOS> TO END DECODING PROCESS !!!!")
+#            print("!!!! MAX DECODER STEPS REACHED BUT NOT ALL PREDICTED TOKENS ARE <EOS>! FORCING NEXT TOKENS TO BE <EOS> TO END DECODING PROCESS !!!!")
             y = torch.zeros_like(y)
             y[:, EOS_IDX] = 1.0 # set the <EOS> token index to have the highest logit value to ensure it is selected as the predicted next token
-            print(y)
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+#            print(y)
+#            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             self.init_decoder_step_counter()
             assert self.decoder_step_counter == 0, "Decoder step counter should be reset to 0 after reaching max decoding steps."
             
@@ -348,10 +348,10 @@ class BaseTransformerDecoder(
         
         elif (next_tokens == EOS_IDX).all(): # if all the predicted next tokens are <eos> or if the max decoding steps has been reached, then reset the decoder step counter to 0 for the next decoding process
             # *** RESET THE DECODER STEP COUNTER WHEN DECODING ENDS ****
-            print("!!!! DECODER REACHED EOS TOKEN! RESETTING DECODER STEP COUNTER FOR NEXT DECODING PROCESS !!!!")
-            print(y)
-            print(f"Predicted next tokens: {y.argmax(dim=-1)}")
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+#            print("!!!! DECODER REACHED EOS TOKEN! RESETTING DECODER STEP COUNTER FOR NEXT DECODING PROCESS !!!!")
+#            print(y)
+#            print(f"Predicted next tokens: {y.argmax(dim=-1)}")
+#            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             self.init_decoder_step_counter()
             assert self.decoder_step_counter == 0, "Decoder step counter should be reset to 0 after decoding is finished."
             
@@ -359,6 +359,8 @@ class BaseTransformerDecoder(
         if return_hs:
             return (y, hidden), new_cache
         return y, new_cache
+
+
 
     def score(self, ys, state, x, return_hs=False):
         """Score."""
@@ -456,7 +458,7 @@ class BaseTransformerDecoder(
             y.shape` is (batch, maxlen_out, token)
         """
         
-        print("BEGIN PARTIALLY AR FORWARD ...")
+        raise Exception("forward_partially_AR() is not currently supported for the TransformerDecoder. Use forward_one_step() instead.")
         
         
         x = self.embed(tgt)  # (n_mask * n_beam, maxlen_out, D)
