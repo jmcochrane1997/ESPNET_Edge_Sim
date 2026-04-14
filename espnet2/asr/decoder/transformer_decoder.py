@@ -331,19 +331,23 @@ class BaseTransformerDecoder(
         # *** INCREMENT THE DECODER STEP COUNTER AFTER TAKING A DECODER STEP ****
         self.step_decoder_step_counter()
         
-        # **** IF ALL THE PREDICTED NEXT TOKENS ARE <eos> OR MAX_DECODER_STEPS HAS BEEN REACHED, RESET THE DECODER STEP COUNTER TO 0 FOR THE NEXT DECODING PROCESS ****
-        next_tokens = y.argmax(dim=-1) # get the predicted next token ids (last time step)
-        if (next_tokens == EOS_IDX).all() or self.decoder_step_counter >= max_decoding_steps: # if all the predicted next tokens are <eos> or if the max decoding steps has been reached, then reset the decoder step counter to 0 for the next decoding process
-            # (1) *** RESET THE DECODER STEP COUNTER WHEN DECODING ENDS ****
+        next_tokens = y.argmax(dim=-1)
+        
+        # *** IF THE MAX DECODER STEPS HAVE BEEN REACHED, WE MUST FORCE THE NEXT TOKEN TO BE <EOS> AS THIS WILL FORCE THE DECODING TO END.
+        if self.decoder_step_counter >= max_decoding_steps:
+            print("!!!! MAX DECODER STEPS REACHED BUT NOT ALL PREDICTED TOKENS ARE <EOS>! FORCING NEXT TOKENS TO BE <EOS> TO END DECODING PROCESS !!!!")
+            y = torch.full_like(y, fill_value=EOS_IDX) # force the next token predictions to be <eos> to end the decoding process
+            print(y)
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             self.init_decoder_step_counter()
-            if (next_tokens == EOS_IDX).all():
-                print("!!!! DECODER REACHED EOS TOKEN! RESETTING DECODER STEP COUNTER FOR NEXT DECODING PROCESS !!!!")
+            assert self.decoder_step_counter == 0, "Decoder step counter should be reset to 0 after reaching max decoding steps."
+        # **** IF ALL THE PREDICTED NEXT TOKENS ARE <eos> OR MAX_DECODER_STEPS HAS BEEN REACHED, RESET THE DECODER STEP COUNTER TO 0 FOR THE NEXT DECODING PROCESS ****
+        
+        elif (next_tokens == EOS_IDX).all(): # if all the predicted next tokens are <eos> or if the max decoding steps has been reached, then reset the decoder step counter to 0 for the next decoding process
+            # *** RESET THE DECODER STEP COUNTER WHEN DECODING ENDS ****
+            print("!!!! DECODER REACHED EOS TOKEN! RESETTING DECODER STEP COUNTER FOR NEXT DECODING PROCESS !!!!")
+            self.init_decoder_step_counter()
             assert self.decoder_step_counter == 0, "Decoder step counter should be reset to 0 after decoding is finished."
-            
-            # (2) *** IF THE MAX DECODER STEPS HAVE BEEN REACHED, WE MUST FORCE THE NEXT TOKEN TO BE <EOS> AS THIS WILL FORCE THE DECODING TO END.
-            if self.decoder_step_counter >= max_decoding_steps and not (next_tokens == EOS_IDX).all():
-                print("!!!! MAX DECODER STEPS REACHED BUT NOT ALL PREDICTED TOKENS ARE <EOS>! FORCING NEXT TOKENS TO BE <EOS> TO END DECODING PROCESS !!!!")
-                y = torch.full_like(y, fill_value=EOS_IDX) # force the next token predictions to be <eos> to end the decoding process
             
         
         if return_hs:
