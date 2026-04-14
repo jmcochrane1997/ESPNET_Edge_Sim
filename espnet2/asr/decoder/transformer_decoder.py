@@ -332,6 +332,7 @@ class BaseTransformerDecoder(
         self.step_decoder_step_counter()
         
         next_tokens = y.argmax(dim=-1)
+        print(f"Predicted next tokens: {next_tokens}")
         
         # *** IF THE MAX DECODER STEPS HAVE BEEN REACHED, WE MUST FORCE THE NEXT TOKEN TO BE <EOS> AS THIS WILL FORCE THE DECODING TO END.
         if self.decoder_step_counter >= max_decoding_steps:
@@ -348,6 +349,7 @@ class BaseTransformerDecoder(
             # *** RESET THE DECODER STEP COUNTER WHEN DECODING ENDS ****
             print("!!!! DECODER REACHED EOS TOKEN! RESETTING DECODER STEP COUNTER FOR NEXT DECODING PROCESS !!!!")
             print(y)
+            print(f"Predicted next tokens: {y.argmax(dim=-1)}")
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             self.init_decoder_step_counter()
             assert self.decoder_step_counter == 0, "Decoder step counter should be reset to 0 after decoding is finished."
