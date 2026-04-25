@@ -1,0 +1,1 @@
+../../../swbd/asr1/local/swbd1_map_words.pl
